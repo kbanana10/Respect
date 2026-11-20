@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Kurdish Quest — Learn Kurmanji</title>
+    <meta name="description" content="Learn Kurdish (Kurmanji) with structured CEFR lessons, interactive letter writing, quizzes, spaced repetition, and offline support." />
+    <meta property="og:title" content="Kurdish Quest — Learn Kurmanji" />
+    <meta property="og:description" content="Learn Kurdish (Kurmanji) with structured CEFR lessons, interactive letter writing, quizzes, spaced repetition, and offline support." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#FBFBFA" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="KurdQuest" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem('kurdish_quest_theme');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', '#141414');
+          }
+          var lang = localStorage.getItem('kurdish_quest_lang');
+          if (lang === 'ar' || lang === 'ku' || lang === 'en') {
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

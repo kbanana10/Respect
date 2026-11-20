@@ -1,0 +1,27 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+
+# Audit harness artefacts
+/audit/patch_mainlayout.py
+storybook-static/
+
+# Repomix generated context pack (AI context snapshot, not source)
+repomix-*.md
+
+# Verification screenshots and scratch artifacts
+.playwright-cli/
+.aeo/
+.aistudio/
+dev-dist/
+
+# Native signing secrets (never commit keystores or local properties)
+*.keystore
+*.jks
+android/local.properties
+android/keystore.properties
