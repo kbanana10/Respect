@@ -1,19 +1,23 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { WRITING_WORDS, type WritingWordWithLength } from '../data/writingWords';
 import { motion } from 'motion/react';
 import { MessageSquare, Sparkles, Check } from 'lucide-react';
 import type { ReviewDeck } from '../services/SpacedRepetitionService';
 import { SUBJECT_ACCENTS } from '../constants/subjectAccents';
+import { pickLocalized } from '../localization/translations';
+import type { Language } from '../models/user';
 
 const ACCENT = SUBJECT_ACCENTS.writing;
 
 /** Section (difficulty) labels for the grouped word grid. */
-function sectionLabel(len: number, isAr: boolean, isKu: boolean): string {
-  if (isKu) return len === 5 ? 'Peyvên dijwar' : `${len} tîp`;
-  if (isAr) return len === 5 ? 'كلمات تحدي' : `${len} أحرف`;
-  return len === 5 ? 'Challenge' : `${len} letters`;
+function sectionLabel(len: number, language: Language): string {
+  return pickLocalized(language, {
+    ku: len === 5 ? 'Peyvên dijwar' : `${len} tîp`,
+    ar: len === 5 ? 'كلمات تحدي' : `${len} أحرف`,
+    en: len === 5 ? 'Challenge' : `${len} letters`,
+  });
 }
 
 /**
@@ -26,8 +30,6 @@ function sectionLabel(len: number, isAr: boolean, isKu: boolean): string {
 export function WritingWords() {
   const navigate = useNavigate();
   const { language, userData } = useAuth();
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
 
   const deck: ReviewDeck = userData?.reviewDeck ?? {};
   const isWordLearned = (id: string): boolean => {
@@ -57,17 +59,17 @@ export function WritingWords() {
         <div className="space-y-2 relative z-10 text-start">
           <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 w-max ${ACCENT.well} ${ACCENT.icon}`}>
             <Sparkles className="w-3.5 h-3.5" />
-            {isKu ? 'PEYV' : isAr ? 'كلمات' : 'WORDS'}
+            {pickLocalized(language, { ku: 'PEYV', ar: 'كلمات', en: 'WORDS' })}
           </span>
           <h3 className="text-2xl font-black mt-2 leading-tight tracking-tight text-ink">
-            {isKu ? 'Peyv' : isAr ? 'كلمات' : 'Words'}
+            {pickLocalized(language, { ku: 'Peyv', ar: 'كلمات', en: 'Words' })}
           </h3>
           <p className="text-muted text-[11px] leading-relaxed font-semibold">
-            {isKu
-              ? 'Hemû tîpên peyvê bikşîne — gava hemû derbas bûn, peyv hîn bûye.'
-              : isAr
-                ? 'تتبّع كل حروف الكلمة — تكتمل عند اجتيازها كلها.'
-                : 'Trace every letter of a word — it counts as learned once each letter passes.'}
+            {pickLocalized(language, {
+              ku: 'Hemû tîpên peyvê bikşîne — gava hemû derbas bûn, peyv hîn bûye.',
+              ar: 'تتبّع كل حروف الكلمة — تكتمل عند اجتيازها كلها.',
+              en: 'Trace every letter of a word — it counts as learned once each letter passes.',
+            })}
           </p>
         </div>
       </div>
@@ -75,25 +77,37 @@ export function WritingWords() {
       {/* Progress line */}
       <div className="flex items-center justify-between mb-3 px-1">
         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-          {isKu ? `${WRITING_WORDS.length} Peyv` : isAr ? `${WRITING_WORDS.length} كلمات` : `${WRITING_WORDS.length} Words`}
+          {pickLocalized(language, {
+            ku: `${WRITING_WORDS.length} Peyv`,
+            ar: `${WRITING_WORDS.length} كلمات`,
+            en: `${WRITING_WORDS.length} Words`,
+          })}
         </h3>
         <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full uppercase">
-          {isKu ? `${learnedCount} hîn bûye` : isAr ? `${learnedCount} مكتوبة` : `${learnedCount} learned`}
+          {pickLocalized(language, {
+            ku: `${learnedCount} hîn bûye`,
+            ar: `${learnedCount} مكتوبة`,
+            en: `${learnedCount} learned`,
+          })}
         </span>
       </div>
 
       <div className="pb-4 space-y-6">
         {groups.map(group => (
-          <section key={group.len} aria-label={sectionLabel(group.len, isAr, isKu)}>
+          <section key={group.len} aria-label={sectionLabel(group.len, language)}>
             <div className="flex items-center gap-2 mb-2 px-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#FFB300]" aria-hidden="true" />
               <h4 className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {sectionLabel(group.len, isAr, isKu)}
+                {sectionLabel(group.len, language)}
               </h4>
             </div>
             <div className="grid grid-cols-3 gap-2">
               {group.words.map((word, index) => {
                 const isLearned = isWordLearned(word.id);
+                const wordMeaning = pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en });
+                const writtenSuffix = isLearned
+                  ? pickLocalized(language, { en: ', written', ar: '، مكتوب', ku: ', nivîsandî' })
+                  : '';
                 return (
                   <motion.button
                     key={word.id}
@@ -103,7 +117,7 @@ export function WritingWords() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: index * 0.015, duration: 0.3 }}
                     onClick={() => navigate(`/writing/words/${word.id}`)}
-                    aria-label={`${word.ku} — ${isAr ? word.ar : word.en}${isLearned ? (isAr ? '، مكتوب' : ', written') : ''}`}
+                    aria-label={`${word.ku} — ${wordMeaning}${writtenSuffix}`}
                     className={`aspect-square rounded-2xl flex flex-col items-center justify-center font-black transition-all relative cursor-pointer select-none px-1
                       ${isLearned
                         ? 'border-2 border-emerald-400/70 dark:border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
@@ -116,7 +130,7 @@ export function WritingWords() {
                       }`}
                       dir="auto"
                     >
-                      {isAr ? word.ar : word.en}
+                      {wordMeaning}
                     </span>
                     {isLearned && (
                       <span className="absolute -top-1.5 -end-1.5 flex items-center justify-center w-4.5 h-4.5 rounded-full bg-emerald-500 text-white shadow-sm" aria-hidden="true">

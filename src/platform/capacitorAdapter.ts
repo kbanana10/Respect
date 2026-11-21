@@ -1,9 +1,5 @@
 /**
  * capacitorAdapter.ts — Native Android & iOS Platform Adapter (Platform Layer)
- *
- * Bridges Capacitor native plugins (App, StatusBar, Keyboard, Haptics, Network,
- * Preferences, SplashScreen) behind PlatformAdapter so Android & iOS share the
- * exact same application code while feeling genuinely native.
  */
 import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -42,21 +38,19 @@ export class CapacitorPlatformAdapter implements PlatformAdapter {
   public async initialize(theme: 'light' | 'dark'): Promise<void> {
     await this.syncStatusBar(theme);
 
-    // Configure native keyboard behavior for iOS/Android
     try {
       if (this.target === 'ios') {
         await Keyboard.setResizeMode({ mode: KeyboardResize.Body });
         await Keyboard.setScroll({ isDisabled: false });
       }
     } catch (err) {
-      log.debug('Keyboard plugin configuration skipped', { err });
+      log.debug('Keyboard plugin configuration skipped', { err: err instanceof Error ? err : String(err) });
     }
 
-    // Hide splash screen cleanly after first render boot
     try {
       await SplashScreen.hide();
     } catch (err) {
-      log.debug('SplashScreen.hide skipped', { err });
+      log.debug('SplashScreen.hide skipped', { err: err instanceof Error ? err : String(err) });
     }
   }
 
@@ -71,7 +65,7 @@ export class CapacitorPlatformAdapter implements PlatformAdapter {
         });
       }
     } catch (err) {
-      log.debug('StatusBar sync skipped', { err });
+      log.debug('StatusBar sync skipped', { err: err instanceof Error ? err : String(err) });
     }
   }
 
@@ -134,7 +128,7 @@ export class CapacitorPlatformAdapter implements PlatformAdapter {
       const status = await Network.getStatus();
       return status.connected;
     } catch {
-      return typeof navigator !== 'undefined' ? navigator.onLine : true;
+      return globalThis.navigator !== undefined ? navigator.onLine : true;
     }
   }
 
@@ -143,10 +137,10 @@ export class CapacitorPlatformAdapter implements PlatformAdapter {
       const { value } = await Preferences.get({ key });
       if (value !== null) return value;
     } catch (err) {
-      log.warn('Capacitor Preferences.get failed, falling back to localStorage', { key, err });
+      log.warn('Capacitor Preferences.get failed, falling back to localStorage', { key, err: err instanceof Error ? err : String(err) });
     }
     try {
-      return typeof window !== 'undefined' ? window.localStorage.getItem(key) : null;
+      return globalThis.window !== undefined ? window.localStorage.getItem(key) : null;
     } catch {
       return null;
     }
@@ -156,10 +150,10 @@ export class CapacitorPlatformAdapter implements PlatformAdapter {
     try {
       await Preferences.set({ key, value });
     } catch (err) {
-      log.warn('Capacitor Preferences.set failed', { key, err });
+      log.warn('Capacitor Preferences.set failed', { key, err: err instanceof Error ? err : String(err) });
     }
     try {
-      if (typeof window !== 'undefined') window.localStorage.setItem(key, value);
+      if (globalThis.window !== undefined) window.localStorage.setItem(key, value);
     } catch {
       // Mirror best-effort
     }
@@ -169,10 +163,10 @@ export class CapacitorPlatformAdapter implements PlatformAdapter {
     try {
       await Preferences.remove({ key });
     } catch (err) {
-      log.warn('Capacitor Preferences.remove failed', { key, err });
+      log.warn('Capacitor Preferences.remove failed', { key, err: err instanceof Error ? err : String(err) });
     }
     try {
-      if (typeof window !== 'undefined') window.localStorage.removeItem(key);
+      if (globalThis.window !== undefined) window.localStorage.removeItem(key);
     } catch {
       // Mirror best-effort
     }

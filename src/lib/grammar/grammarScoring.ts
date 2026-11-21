@@ -47,7 +47,7 @@ export function isLessonCompleted(
 }
 
 /** Fraction (0..1) of a lesson's exercises whose deck nodes are learned. */
-export function lessonCompletionRatio(lesson: GrammarLesson, deck: ReviewDeck): number {
+function lessonCompletionRatio(lesson: GrammarLesson, deck: ReviewDeck): number {
   const total = lesson.exercises.length;
   if (total === 0) return 0;
   let learned = 0;

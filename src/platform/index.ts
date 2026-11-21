@@ -4,13 +4,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { createServiceToken, serviceContainer } from '../core/container';
-import type { PlatformAdapter, PlatformCapabilities } from './types';
+import type { PlatformAdapter } from './types';
 import { WebPlatformAdapter } from './webAdapter';
 import { CapacitorPlatformAdapter } from './capacitorAdapter';
 
-export type { PlatformAdapter, PlatformCapabilities, PlatformTarget, HapticStyle } from './types';
+export type { PlatformAdapter } from './types';
 export { WebPlatformAdapter } from './webAdapter';
-export { CapacitorPlatformAdapter } from './capacitorAdapter';
 
 export const PLATFORM_TOKEN = createServiceToken<PlatformAdapter>('PlatformAdapter');
 
@@ -34,7 +33,7 @@ export function getPlatform(): PlatformAdapter {
 /** Reactive connectivity hook working seamlessly on Web, Android, and iOS. */
 export function useOnlineStatus(): boolean {
   const [isOnline, setIsOnline] = useState<boolean>(
-    typeof navigator !== 'undefined' ? navigator.onLine : true,
+    globalThis.navigator !== undefined ? navigator.onLine : true,
   );
 
   useEffect(() => {
@@ -76,10 +75,11 @@ export function usePWAInstall() {
     setIsInstalled(caps.isNative || caps.isStandalonePWA);
     setIsIOSSafari(caps.isIOSSafariBrowser);
 
-    if (typeof window === 'undefined' || caps.isNative) return;
+    if (globalThis.window === undefined || caps.isNative) return;
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      // SAFETY: The browser `beforeinstallprompt` event always implements `prompt()` and `userChoice`.
       setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '../../store/AuthContext';
 import type { GrammarExercise } from '../../data/grammar/types';
 import { grammarShuffle } from '../../lib/grammar/grammarScoring';
 import { CheckButton, ContinueButton, ResultNote } from './ExerciseChrome';
@@ -19,8 +19,6 @@ interface ArrangeSentenceExerciseProps {
  */
 export function ArrangeSentenceExercise({ exercise, checked, onCheck, onNext }: ArrangeSentenceExerciseProps) {
   const { language } = useAuth();
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
   const canonical = exercise.sentenceWords ?? [];
   const pool = useMemo(() => grammarShuffle(canonical), [canonical]);
   const [answer, setAnswer] = useState<string[]>([]);
@@ -62,7 +60,7 @@ export function ArrangeSentenceExercise({ exercise, checked, onCheck, onNext }: 
       >
         {answer.length === 0 ? (
           <span dir="auto" className="text-slate-400 text-xs font-semibold px-2">
-            {isAr ? 'اضغط الكلمات بالترتيب الصحيح' : isKu ? 'Peyvan bi rêza rast bitikîne' : 'Tap the words in order'}
+            {pickLocalized({ ar: 'اضغط الكلمات بالترتيب الصحيح', ku: 'Peyvan bi rêza rast bitikîne', en: 'Tap the words in order' }, language)}
           </span>
         ) : (
           answer.map((word, i) => (
@@ -103,8 +101,12 @@ export function ArrangeSentenceExercise({ exercise, checked, onCheck, onNext }: 
           correct={correct}
           answerText={canonical.join(' ')}
           answerIsKurdish
-          headline={correct ? (isAr ? 'صحيح!' : isKu ? 'Rast!' : 'Correct!') : isAr ? 'خطأ' : isKu ? 'Şaş' : 'Incorrect'}
-          answerLabel={isAr ? 'الجملة الصحيحة:' : isKu ? 'Hevoka rast:' : 'Correct sentence:'}
+          headline={
+            correct
+              ? pickLocalized({ ar: 'صحيح!', ku: 'Rast!', en: 'Correct!' }, language)
+              : pickLocalized({ ar: 'خطأ', ku: 'Şaş', en: 'Incorrect' }, language)
+          }
+          answerLabel={pickLocalized({ ar: 'الجملة الصحيحة:', ku: 'Hevoka rast:', en: 'Correct sentence:' }, language)}
         />
       )}
 
@@ -113,10 +115,10 @@ export function ArrangeSentenceExercise({ exercise, checked, onCheck, onNext }: 
           <CheckButton
             disabled={answer.length !== canonical.length}
             onClick={() => onCheck(answer)}
-            label={isAr ? 'تحقق' : isKu ? 'Kontrol bike' : 'Check'}
+            label={pickLocalized({ ar: 'تحقق', ku: 'Kontrol bike', en: 'Check' }, language)}
           />
         ) : (
-          <ContinueButton onClick={onNext} label={isAr ? 'متابعة' : isKu ? 'Bidomîne' : 'Continue'} />
+          <ContinueButton onClick={onNext} label={pickLocalized({ ar: 'متابعة', ku: 'Bidomîne', en: 'Continue' }, language)} />
         )}
       </div>
     </div>

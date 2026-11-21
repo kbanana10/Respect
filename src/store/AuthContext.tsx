@@ -77,13 +77,13 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function applyDocumentDirection(lang: Language): void {
-  if (typeof document === 'undefined') return;
+  if (globalThis.document === undefined) return;
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
 }
 
 function applyDocumentTheme(nextTheme: 'light' | 'dark'): void {
-  if (typeof document !== 'undefined') {
+  if (globalThis.document !== undefined) {
     if (nextTheme === 'dark') {
       document.documentElement.classList.add('dark');
     } else {
@@ -93,10 +93,17 @@ function applyDocumentTheme(nextTheme: 'light' | 'dark'): void {
   void getPlatform().syncStatusBar(nextTheme);
 }
 
+function applyDocumentLearnerMode(mode: 'kids' | 'adults', accent: string): void {
+  if (globalThis.document === undefined) return;
+  document.documentElement.dataset.learnerMode = mode;
+  document.documentElement.dataset.accent = accent;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
     try {
       const storedUser = localStorage.getItem('kurdish_quest_user');
+      // SAFETY: `kurdish_quest_user` is exclusively written by AuthContext with a serialized `User` object.
       return storedUser ? (JSON.parse(storedUser) as User) : null;
     } catch {
       return null;
@@ -158,9 +165,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [theme]);
 
   useEffect(() => {
-    void getPlatform().initialize(theme);
-    // Run once on mount with initial theme
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    applyDocumentLearnerMode(userData.learnerMode ?? 'adults', userData.activeAccent ?? 'gold');
+  }, [userData.learnerMode, userData.activeAccent]);
+
+  const initialThemeRef = useRef(theme);
+  useEffect(() => {
+    void getPlatform().initialize(initialThemeRef.current);
   }, []);
 
   // Only probe Firestore when a real Firebase project is configured via env.
@@ -170,7 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await getDoc(doc(db, 'test', 'connection'));
       } catch (error) {
-        log.debug('Firestore startup probe operating in offline/fallback mode', { error });
+        log.debug('Firestore startup probe operating in offline/fallback mode', { error: error instanceof Error ? error : String(error) });
       }
     }
     void testConnection();
@@ -196,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             cloudData = migrateUserData(docSnap.data()).data;
           }
         } catch (e) {
-          log.warn('Firestore profile pull skipped (offline/cold start)', { err: e });
+          log.warn('Firestore profile pull skipped (offline/cold start)', { err: e instanceof Error ? e : String(e) });
         }
 
         const localDataObj = await offlineStorage.getUserData();
@@ -211,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
               await setDoc(docRef, merged, { merge: true });
             } catch (err) {
-              log.warn('Failed pushing merged profile to cloud', { err });
+              log.warn('Failed pushing merged profile to cloud', { err: err instanceof Error ? err : String(err) });
             }
           }
         } else if (cloudData) {
@@ -227,7 +237,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
               await setDoc(docRef, finalProfile);
             } catch (err) {
-              log.warn('Failed creating cloud profile on initial sign-in', { err });
+              log.warn('Failed creating cloud profile on initial sign-in', { err: err instanceof Error ? err : String(err) });
             }
           }
         }
@@ -241,6 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let parsed: User | null = null;
         if (storedUser) {
           try {
+            // SAFETY: `kurdish_quest_user` is exclusively written by AuthContext with a serialized `User` object.
             parsed = JSON.parse(storedUser) as User;
           } catch {
             log.warn('Corrupt kurdish_quest_user in localStorage — clearing.');
@@ -252,7 +263,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         // Support ?autostart=1 for deterministic direct-to-dashboard sessions
         const isAutostart =
-          typeof window !== 'undefined' &&
+          globalThis.window !== undefined &&
           new URLSearchParams(window.location.search).get('autostart') === '1';
 
         if (!parsed && isAutostart) {
@@ -288,7 +299,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       loadProfile(firebaseUser)
         .catch((err) => {
-          log.error('Profile load failed', { err });
+          log.error('Profile load failed', { err: err instanceof Error ? err : String(err) });
           setProfileError(err instanceof Error ? err.message : String(err));
         })
         .finally(() => setLoading(false));
@@ -332,7 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (e) {
-      log.error('Popup login error', { err: e });
+      log.error('Popup login error', { err: e instanceof Error ? e : String(e) });
       throw e;
     }
   }, []);
@@ -349,7 +360,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           await updateProfile(auth.currentUser, { displayName: cleanName });
         } catch (err) {
-          log.warn('Could not save display name on Firebase auth account', { err });
+          log.warn('Could not save display name on Firebase auth account', { err: err instanceof Error ? err : String(err) });
         }
       }
     },
@@ -365,7 +376,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await signOut(auth);
     } catch (e) {
-      log.warn('Sign out err', { err: e });
+      log.warn('Sign out err', { err: e instanceof Error ? e : String(e) });
     }
   }, []);
 

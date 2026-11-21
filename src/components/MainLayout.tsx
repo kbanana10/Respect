@@ -4,72 +4,60 @@
  * Adapts seamlessly across:
  * - Mobile (Android, iPhone, small web): edge-to-edge layout + safe-area insets + bottom tab bar
  * - Tablet & Desktop (iPad, desktop browsers): persistent RTL-aware sidebar + spacious content canvas
- *
- * All native device interactions (Android hardware back button, app exit, safe areas)
- * are delegated to the Platform Layer (`src/platform`).
+ * - Kids Mode (4 tabs: Home, Map, Games, Stars; ad-free & leaderboard-free)
+ * - Adults Mode (5 tabs: Home, Path, Practice, Games, Profile; full study tools)
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, Outlet, useNavigate, useLocation, useNavigationType } from 'react-router';
+import { Outlet, useNavigate, useLocation, useNavigationType } from 'react-router';
 import { useAuth } from '../store/AuthContext';
 import {
-  Hash, ArrowLeft, Search, User, Bell, X as CloseIcon,
+  Home, ArrowLeft, Search, User, Bell, X as CloseIcon,
   Gamepad2, Map, Flame, Smile, GraduationCap, Sparkles, Star, Compass, Award,
-  Settings as SettingsIcon, Heart, Trophy, ShoppingBag, Sun, Moon,
+  Settings as SettingsIcon, Heart, Trophy, ShoppingBag,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
-import { t, getLayoutDirection } from '../localization/translations';
+import { t, getLayoutDirection, pickLocalized } from '../localization/translations';
 import { getRouteMeta, navigateSafelyBack, NUMBER_FAMILY_HISTORY_STATE, runBackInterceptors } from '../lib/navigation';
 import { getPlatform } from '../platform';
 import { motion, AnimatePresence } from 'motion/react';
 import { checkAndTriggerReminder } from '../services/ReminderService';
 import { Modal, Button } from './ui';
-import { SunMark } from './ui/SunMark';
-import { PWAInstallButton } from '../presentation/components/PWAInstallButton';
 import { AVATARS } from '../constants/appConstants';
-import type { Language } from '../models/user';
+import { DesktopSidebar, type NavItemConfig } from './layout/DesktopSidebar';
+import { MobileBottomNav } from './layout/MobileBottomNav';
 
 interface HistoryStateWithUsr {
-  usr?: unknown;
+  usr?: string;
 }
 
-const renderHeaderAvatarIcon = (iconName: string) => {
-  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    user: User,
-    smile: Smile,
-    'graduation-cap': GraduationCap,
-    flame: Flame,
-    sparkles: Sparkles,
-    star: Star,
-    compass: Compass,
-    award: Award,
-  };
-  const IconComponent = iconMap[iconName] || User;
+const AVATAR_ICON_MAP = {
+  user: User,
+  smile: Smile,
+  'graduation-cap': GraduationCap,
+  flame: Flame,
+  sparkles: Sparkles,
+  star: Star,
+  compass: Compass,
+  award: Award,
+} satisfies Record<string, React.ComponentType<{ className?: string }>>;
+
+const AVATAR_ICON_LOOKUP = new globalThis.Map<string, React.ComponentType<{ className?: string }>>(
+  Object.entries(AVATAR_ICON_MAP),
+);
+
+function renderHeaderAvatarIcon(iconName: string): React.ReactNode {
+  const IconComponent = AVATAR_ICON_LOOKUP.get(iconName) ?? User;
   return <IconComponent className="w-5 h-5" />;
-};
+}
 
 const LEARN_ACTIVE_PATHS = [
   '/learn',
   '/alphabet',
-  '/vocabulary/numbers',
-  '/vocabulary/colors',
+  '/vocabulary',
+  '/sentences',
   '/grammar',
-  '/grammar/pronouns',
-  '/grammar/verbs',
-  '/grammar/nouns',
-  '/grammar/sentence-structure',
-  '/grammar/prepositions',
   '/writing',
-  '/writing/words',
-  '/writing/sentences',
-];
-
-function isNavPathActive(path: string, current: string, activePaths?: string[]): boolean {
-  return Boolean(
-    (activePaths && (activePaths.includes(current) || current.startsWith(path))) ||
-      current === path ||
-      (path !== '/' && current.startsWith(path)),
-  );
-}
+] as const;
 
 export function MainLayout() {
   const { user, userData, loading, language, setLanguage, theme, toggleTheme } = useAuth();
@@ -78,6 +66,7 @@ export function MainLayout() {
   const navigationType = useNavigationType();
   const routeMeta = getRouteMeta(location.pathname, language);
   const isProfile = location.pathname === '/profile';
+  const isKidsMode = userData?.learnerMode === 'kids';
   const selectedHeaderAvatar = AVATARS.find((a) => a.id === userData?.avatarId) || AVATARS[0];
   const [showExitModal, setShowExitModal] = useState(false);
 
@@ -116,17 +105,16 @@ export function MainLayout() {
 
   useEffect(() => {
     if (!activeNotification) return;
-    const timer = setTimeout(() => setActiveNotification(null), 8000);
-    return () => clearTimeout(timer);
+    const timer = window.setTimeout(() => setActiveNotification(null), 8000);
+    return () => window.clearTimeout(timer);
   }, [activeNotification]);
 
   const [isGameActive, setIsGameActive] = useState(false);
 
   useEffect(() => {
     const handleGameActive = (e: Event) => {
-      const customEvent = e as CustomEvent<boolean>;
-      if (customEvent && (customEvent.detail === true || customEvent.detail === false)) {
-        setIsGameActive(customEvent.detail && location.pathname === '/games');
+      if (e instanceof CustomEvent && (e.detail === true || e.detail === false)) {
+        setIsGameActive(e.detail && location.pathname === '/games');
       }
     };
     window.addEventListener('set-game-active', handleGameActive);
@@ -154,20 +142,22 @@ export function MainLayout() {
       }
     };
 
-    const initialTimeout = setTimeout(checkReminder, 3000);
-    const intervalId = setInterval(checkReminder, 60000);
+    const initialTimeout = window.setTimeout(checkReminder, 3000);
+    const intervalId = window.setInterval(checkReminder, 60000);
 
     return () => {
-      clearTimeout(initialTimeout);
-      clearInterval(intervalId);
+      window.clearTimeout(initialTimeout);
+      window.clearInterval(intervalId);
     };
   }, [user, loading, userData, language]);
 
   useEffect(() => {
     const handleInAppTrigger = (e: Event) => {
-      const customEvent = e as CustomEvent<{ title: string; message: string }>;
-      if (customEvent.detail) {
-        setActiveNotification(customEvent.detail);
+      if (e instanceof CustomEvent && e.detail && e.detail.title && e.detail.message) {
+        setActiveNotification({
+          title: String(e.detail.title),
+          message: String(e.detail.message),
+        });
       }
     };
     window.addEventListener('trigger-in-app-notification', handleInAppTrigger);
@@ -183,15 +173,14 @@ export function MainLayout() {
   }, [user, loading, location, navigate]);
 
   const lastKqFamilyEntryWasNumberFamily = (): boolean => {
-    const state =
-      typeof window !== 'undefined'
-        ? (window.history?.state as HistoryStateWithUsr | null)
-        : null;
+    if (globalThis.window === undefined) return false;
+    // SAFETY: React Router stores route state under `window.history.state.usr`.
+    const state = window.history?.state as HistoryStateWithUsr | null;
     return state != null && state.usr === NUMBER_FAMILY_HISTORY_STATE;
   };
 
   const historyBack = () => {
-    if (typeof window !== 'undefined' && typeof window.history?.back === 'function') {
+    if (globalThis.window !== undefined && window.history && window.history.back) {
       window.history.back();
     }
   };
@@ -259,20 +248,65 @@ export function MainLayout() {
     );
   }
 
-  const primaryNavItems = [
-    { path: '/', label: t(language, 'home'), icon: Hash },
-    { path: '/learn', activePaths: LEARN_ACTIVE_PATHS, label: t(language, 'learning'), icon: GraduationCap },
-    { path: '/roadmap', label: t(language, 'roadmap_tab'), icon: Map, tourId: 'nav-roadmap' },
-    { path: '/games', label: t(language, 'games_tab'), icon: Gamepad2 },
-    { path: '/profile', label: t(language, 'profile_tab'), icon: User },
-  ];
+  const primaryNavItems: readonly NavItemConfig[] = isKidsMode
+    ? [
+        { path: '/', label: t(language, 'home'), icon: Home },
+        { path: '/roadmap', label: t(language, 'nav_map'), icon: Map, tourId: 'nav-roadmap' },
+        { path: '/games', label: t(language, 'games_tab'), icon: Gamepad2 },
+        { path: '/profile', label: t(language, 'nav_stars'), icon: Star },
+      ]
+    : [
+        { path: '/', label: t(language, 'home'), icon: Home },
+        { path: '/roadmap', label: t(language, 'roadmap_tab'), icon: Map, tourId: 'nav-roadmap' },
+        { path: '/learn', activePaths: LEARN_ACTIVE_PATHS, label: t(language, 'nav_practice'), icon: GraduationCap },
+        { path: '/games', label: t(language, 'games_tab'), icon: Gamepad2 },
+        { path: '/profile', label: t(language, 'profile_tab'), icon: User },
+      ];
 
-  const secondaryLinks = [
-    { path: '/search', label: t(language, 'nav_dictionary'), icon: Search },
-    { path: '/favorites', label: t(language, 'nav_favorites'), icon: Heart },
-    { path: '/leaderboard', label: language === 'ar' ? 'المتصدرون' : language === 'ku' ? 'Rêzbendî' : 'Leaderboard', icon: Trophy },
-    { path: '/store', label: language === 'ar' ? 'المتجر' : language === 'ku' ? 'Firoşgeh' : 'Store', icon: ShoppingBag },
-  ];
+  const secondaryLinks: readonly NavItemConfig[] = isKidsMode
+    ? [
+        { path: '/writing', label: t(language, 'writing_studio_title'), icon: GraduationCap },
+        { path: '/store', label: t(language, 'nav_store'), icon: ShoppingBag },
+      ]
+    : [
+        { path: '/search', label: t(language, 'nav_dictionary'), icon: Search },
+        { path: '/favorites', label: t(language, 'nav_favorites'), icon: Heart },
+        { path: '/leaderboard', label: t(language, 'nav_leaderboard'), icon: Trophy },
+        { path: '/store', label: t(language, 'nav_store'), icon: ShoppingBag },
+      ];
+
+  const headerLabels = pickLocalized(language, {
+    en: {
+      practiceNow: 'Practice Now',
+      snooze: 'Snooze',
+      dismissNotif: 'Dismiss notification',
+      back: `Back to ${routeMeta.safeBackTo}`,
+      profile: 'Profile',
+      settings: 'Settings',
+      streak: 'Current Streak',
+      gems: 'Gems & Rewards',
+    },
+    ar: {
+      practiceNow: 'تمرّن الآن',
+      snooze: 'لاحقاً',
+      dismissNotif: 'إغلاق الإشعار',
+      back: 'رجوع آمن',
+      profile: 'الملف الشخصي',
+      settings: 'الإعدادات',
+      streak: 'سلسلة الأيام',
+      gems: 'الجواهر والمكافآت',
+    },
+    ku: {
+      practiceNow: 'Niha Biceribîne',
+      snooze: 'Paşê',
+      dismissNotif: 'Agahdariyê bigire',
+      back: 'Vegere paş',
+      profile: 'Profîl',
+      settings: 'Mîheng',
+      streak: 'Rêza Rojane',
+      gems: 'Cewher û Xelat',
+    },
+  });
 
   return (
     <div
@@ -284,98 +318,16 @@ export function MainLayout() {
     >
       {/* Desktop & iPad Landscape Adaptive Sidebar */}
       {!shouldHideBottomNav && (
-        <aside
-          aria-label="Sidebar Navigation"
-          className="hidden lg:flex lg:flex-col w-64 shrink-0 bg-white dark:bg-slate-900 border-e border-line-soft dark:border-slate-800 h-full z-20"
-        >
-          <div className="px-5 py-5 flex items-center gap-3 border-b border-line dark:border-slate-800">
-            <div className="w-10 h-10 rounded-xl bg-[#FFB300] text-[#432C00] flex items-center justify-center shrink-0">
-              <SunMark className="w-6 h-6" />
-            </div>
-            <span className="font-display font-black text-lg tracking-tight text-ink whitespace-nowrap">
-              Kurdish Quest
-            </span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
-            <div className="space-y-1">
-              {primaryNavItems.map((item) => {
-                const active = isNavPathActive(item.path, location.pathname, item.activePaths);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-xl text-sm font-bold transition-colors whitespace-nowrap',
-                      active
-                        ? 'bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B]'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-ink',
-                    )}
-                  >
-                    <Icon className="w-5 h-5 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="pt-4 border-t border-line dark:border-slate-800 space-y-1">
-              {secondaryLinks.map((item) => {
-                const active = location.pathname === item.path;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    aria-current={active ? 'page' : undefined}
-                    className={cn(
-                      'flex items-center gap-3 px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-bold transition-colors whitespace-nowrap',
-                      active
-                        ? 'bg-slate-100 dark:bg-slate-800 text-ink'
-                        : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/50 hover:text-ink',
-                    )}
-                  >
-                    <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="p-3.5 border-t border-line dark:border-slate-800 space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-0.5 flex-1">
-                {(['en', 'ku', 'ar'] as Language[]).map((langCode) => (
-                  <button
-                    key={langCode}
-                    type="button"
-                    onClick={() => setLanguage(langCode)}
-                    className={cn(
-                      'flex-1 py-1.5 text-xs font-extrabold rounded-lg transition-colors cursor-pointer whitespace-nowrap',
-                      language === langCode
-                        ? 'bg-white dark:bg-slate-700 text-[#8A6100] dark:text-[#FFCE6B] shadow-2xs'
-                        : 'text-slate-500 dark:text-slate-400 hover:text-ink',
-                    )}
-                  >
-                    {langCode === 'en' ? 'EN' : langCode === 'ku' ? 'KU' : 'عربي'}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={toggleTheme}
-                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                className="min-w-[40px] min-h-[40px] rounded-xl border border-line-soft dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
-              >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-            </div>
-            <PWAInstallButton compact className="w-full" />
-          </div>
-        </aside>
+        <DesktopSidebar
+          primaryNavItems={primaryNavItems}
+          secondaryLinks={secondaryLinks}
+          currentPath={location.pathname}
+          language={language}
+          setLanguage={setLanguage}
+          theme={theme}
+          toggleTheme={toggleTheme}
+          isKidsMode={isKidsMode}
+        />
       )}
 
       {/* Main Responsive App Column */}
@@ -430,21 +382,21 @@ export function MainLayout() {
                     }}
                     className="bg-[#FFB300] text-[#432C00] font-extrabold text-xs px-4 py-2 rounded-xl hover:bg-[#E69500] transition-colors cursor-pointer"
                   >
-                    {language === 'ku' ? 'Niha Biceribîne' : language === 'ar' ? 'تمرّن الآن' : 'Practice Now'}
+                    {headerLabels.practiceNow}
                   </button>
                   <button
                     type="button"
                     onClick={() => setActiveNotification(null)}
                     className="bg-transparent hover:bg-surface-2 text-muted border border-line-soft font-bold text-xs px-3 py-2 rounded-xl transition-colors cursor-pointer"
                   >
-                    {language === 'ku' ? 'Paşê' : language === 'ar' ? 'لاحقاً' : 'Snooze'}
+                    {headerLabels.snooze}
                   </button>
                 </div>
               </div>
 
               <button
                 type="button"
-                aria-label={language === 'ar' ? 'إغلاق الإشعار' : 'Dismiss notification'}
+                aria-label={headerLabels.dismissNotif}
                 onClick={() => setActiveNotification(null)}
                 className="text-muted hover:text-ink p-1 rounded-lg hover:bg-surface-2 transition-colors shrink-0 -me-1 -mt-1 cursor-pointer"
               >
@@ -461,7 +413,7 @@ export function MainLayout() {
                 <button
                   onClick={handleSmartBack}
                   type="button"
-                  aria-label={language !== 'ar' ? `Back to ${routeMeta.safeBackTo}` : 'رجوع آمن'}
+                  aria-label={headerLabels.back}
                   className="min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-[#2B2B2A] transition-colors -ms-2 focus-visible:ring-2 focus-visible:ring-[#FFB300] dark:focus-visible:ring-[#FFBA38] cursor-pointer"
                 >
                   <ArrowLeft
@@ -477,12 +429,17 @@ export function MainLayout() {
                 <button
                   onClick={() => navigate('/profile')}
                   type="button"
-                  aria-label={language !== 'ar' ? 'Profile' : 'الملف الشخصي'}
-                  title={language !== 'ar' ? 'Profile' : 'الملف الشخصي'}
+                  aria-label={headerLabels.profile}
+                  title={headerLabels.profile}
                   className="lg:hidden w-11 h-11 rounded-full flex items-center justify-center transition-transform hover:scale-105 active:scale-95 cursor-pointer overflow-hidden border border-line-soft focus-visible:ring-2 focus-visible:ring-[#FFB300] shrink-0"
                 >
                   {user?.photoURL ? (
-                    <img src={user.photoURL} alt={user?.displayName || 'User'} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    <img
+                      src={user.photoURL}
+                      alt={user?.displayName || 'User'}
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
                   ) : (
                     <div className={`w-full h-full flex items-center justify-center ${selectedHeaderAvatar.color}`}>
                       {renderHeaderAvatarIcon(selectedHeaderAvatar.icon)}
@@ -507,8 +464,8 @@ export function MainLayout() {
                   <button
                     type="button"
                     onClick={() => window.dispatchEvent(new CustomEvent('kq:profile-settings'))}
-                    aria-label={language !== 'ar' ? 'Settings' : 'الإعدادات'}
-                    title={language !== 'ar' ? 'Settings' : 'الإعدادات'}
+                    aria-label={headerLabels.settings}
+                    title={headerLabels.settings}
                     className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-[#FFB300] focus-visible:ring-2 focus-visible:ring-[#FFB300]"
                   >
                     <SettingsIcon className="w-5 h-5" />
@@ -523,7 +480,7 @@ export function MainLayout() {
                     <button
                       onClick={() => navigate('/')}
                       type="button"
-                      title={language === 'ku' ? 'Rêza Rojane' : language === 'ar' ? 'سلسلة الأيام' : 'Current Streak'}
+                      title={headerLabels.streak}
                       className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none min-h-0 py-2.5 -my-2.5 ps-2.5 -ms-2.5 pe-1 -me-1"
                     >
                       <Flame
@@ -536,7 +493,7 @@ export function MainLayout() {
                     <button
                       onClick={() => navigate('/store')}
                       type="button"
-                      title={language === 'ku' ? 'Cewher' : language === 'ar' ? 'الجواهر' : 'Gems'}
+                      title={headerLabels.gems}
                       className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none min-h-0 py-2.5 -my-2.5 pe-2.5 -me-2.5 ps-1 -ms-1"
                     >
                       <span className="text-sm" aria-hidden="true">💎</span>
@@ -563,76 +520,9 @@ export function MainLayout() {
 
         {/* Mobile & Portrait Tablet Bottom Navigation */}
         {!shouldHideBottomNav && (
-          <nav
-            aria-label="Main Navigation"
-            className="lg:hidden absolute bottom-0 w-full bg-white/95 dark:bg-[#1F1F1E]/95 backdrop-blur-md border-t border-slate-200/70 dark:border-[#2B2B2A] flex justify-around items-center px-1 pb-safe pt-1 h-16 z-20"
-          >
-            {primaryNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavIcon
-                  key={item.path}
-                  path={item.path}
-                  activePaths={item.activePaths}
-                  icon={<Icon className="w-5 h-5" />}
-                  label={item.label}
-                  current={location.pathname}
-                  tourId={item.tourId}
-                />
-              );
-            })}
-          </nav>
+          <MobileBottomNav items={primaryNavItems} currentPath={location.pathname} />
         )}
       </div>
     </div>
-  );
-}
-
-function NavIcon({
-  path,
-  icon,
-  label,
-  current,
-  tourId,
-  activePaths,
-}: {
-  path: string;
-  icon: React.ReactNode;
-  label: string;
-  current: string;
-  tourId?: string;
-  activePaths?: string[];
-}) {
-  const navigate = useNavigate();
-  const isActive = isNavPathActive(path, current, activePaths);
-
-  return (
-    <button
-      onClick={() => navigate(path)}
-      type="button"
-      aria-label={label}
-      aria-current={isActive ? 'page' : undefined}
-      data-tour={tourId}
-      className={cn(
-        'flex flex-col items-center justify-center flex-1 min-w-[44px] h-full relative transition-colors duration-200 outline-none select-none cursor-pointer whitespace-nowrap rounded-xl focus-visible:ring-2 focus-visible:ring-[#FFB300] dark:focus-visible:ring-[#FFBA38] px-0.5',
-        isActive
-          ? 'text-[#432C00] font-extrabold'
-          : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200',
-      )}
-    >
-      <div className="relative flex flex-col items-center justify-center w-full">
-        {isActive && (
-          <motion.div
-            layoutId="activeNavTab"
-            className="absolute -inset-x-1 -inset-y-1 bg-[#FFB300] rounded-xl -z-10"
-            transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-          />
-        )}
-        <div className="transition-transform duration-200">{icon}</div>
-        <span className="text-[11px] font-bold mt-0.5 block whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-0.5">
-          {label}
-        </span>
-      </div>
-    </button>
   );
 }

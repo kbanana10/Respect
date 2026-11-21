@@ -446,12 +446,12 @@ export const LESSON_GLYPHS: string[] = Object.keys(LETTER_STROKES);
  */
 export type LetterReadiness = 'draft' | 'verified' | 'ready';
 
-export const LETTER_GEOMETRY_VERIFIED: ReadonlySet<string> = new Set([
+const LETTER_GEOMETRY_VERIFIED: ReadonlySet<string> = new Set([
   'A', 'B', 'C', 'Ç', 'D', 'E', 'Ê', 'F', 'G', 'H', 'I', 'Î', 'J', 'K', 'L',
   'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'Ş', 'T', 'U', 'Û', 'V', 'W', 'X', 'Y', 'Z',
 ]);
 
-export const LETTER_HANDWRITING_READY: ReadonlySet<string> = new Set([
+const LETTER_HANDWRITING_READY: ReadonlySet<string> = new Set([
   'A', 'B', 'C', 'Ç', 'D', 'E', 'Ê', 'F', 'G', 'H', 'I', 'Î', 'J', 'K', 'L',
   'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'Ş', 'T', 'U', 'Û', 'V', 'W', 'X', 'Y', 'Z',
 ]);
@@ -462,10 +462,6 @@ export function getLetterReadiness(glyph: string): LetterReadiness {
   if (LETTER_GEOMETRY_VERIFIED.has(glyph)) return 'verified';
   return 'draft';
 }
-
-/** Glyph → readiness map, computed once (the derived truth used by the UI). */
-export const LETTER_READINESS: Readonly<Record<string, LetterReadiness>> =
-  Object.freeze(Object.fromEntries(LESSON_GLYPHS.map((g) => [g, getLetterReadiness(g)])));
 
 /** Look up a glyph's stroke plan (undefined → the caller degrades gracefully). */
 export function getLetterStrokes(glyph: string): GlyphStrokePlan | undefined {

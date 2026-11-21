@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '../../store/AuthContext';
 import type { GrammarExercise } from '../../data/grammar/types';
 import { grammarShuffle } from '../../lib/grammar/grammarScoring';
 import { CheckButton, ContinueButton, ResultNote } from './ExerciseChrome';
@@ -20,7 +20,6 @@ interface MatchPairsExerciseProps {
  */
 export function MatchPairsExercise({ exercise, checked, onCheck, onNext }: MatchPairsExerciseProps) {
   const { language } = useAuth();
-  const isAr = language === 'ar';
   const pairs = exercise.pairs ?? [];
 
   const shuffledRight = useMemo(
@@ -58,13 +57,19 @@ export function MatchPairsExercise({ exercise, checked, onCheck, onNext }: Match
     onCheck(ordered.map((gloss) => rightIndexForGloss(gloss)));
   }
 
-  const instruction = isAr
-    ? 'اضغط على الكلمة الكردية ثم على معناها'
-    : language === 'ku'
-      ? 'Li ser peyva kurdî û paşê wateya wê bitikîne'
-      : 'Tap a Kurdish word, then its meaning';
+  const instruction = pickLocalized(
+    {
+      ar: 'اضغط على الكلمة الكردية ثم على معناها',
+      ku: 'Li ser peyva kurdî û paşê wateya wê bitikîne',
+      en: 'Tap a Kurdish word, then its meaning',
+    },
+    language,
+  );
 
-  const hintHeading = isAr ? 'التطابق الصحيح:' : language === 'ku' ? 'Cotên rast:' : 'Correct matches:';
+  const hintHeading = pickLocalized(
+    { ar: 'التطابق الصحيح:', ku: 'Cotên rast:', en: 'Correct matches:' },
+    language,
+  );
 
   const previewPairs = pairs.map((p) => `${p.ku} → ${pickLocalized(p, language)}`).join(' · ');
 
@@ -114,7 +119,7 @@ export function MatchPairsExercise({ exercise, checked, onCheck, onNext }: Match
                         onClick={() => { const next = { ...assignedRight }; delete next[li]; setAssignedRight(next); }}
                         className="text-[11px] font-bold text-teal-600 dark:text-teal-400 underline shrink-0"
                       >
-                        {isAr ? 'إعادة' : language === 'ku' ? 'paşve' : 'undo'}
+                        {pickLocalized({ ar: 'إعادة', ku: 'paşve', en: 'undo' }, language)}
                       </button>
                     </div>
                   ) : null
@@ -148,16 +153,24 @@ export function MatchPairsExercise({ exercise, checked, onCheck, onNext }: Match
           correct={correct}
           answerText={previewPairs}
           answerIsKurdish={language === 'ku'}
-          headline={correct ? (isAr ? 'صحيح!' : language === 'ku' ? 'Rast!' : 'Correct!') : isAr ? 'خطأ' : language === 'ku' ? 'Şaş' : 'Incorrect'}
+          headline={
+            correct
+              ? pickLocalized({ ar: 'صحيح!', ku: 'Rast!', en: 'Correct!' }, language)
+              : pickLocalized({ ar: 'خطأ', ku: 'Şaş', en: 'Incorrect' }, language)
+          }
           answerLabel={hintHeading}
         />
       )}
 
       <div className="mt-auto">
         {!submitted ? (
-          <CheckButton disabled={anyLeftMissing} onClick={handleCheck} label={isAr ? 'تحقق' : language === 'ku' ? 'Kontrol bike' : 'Check'} />
+          <CheckButton
+            disabled={anyLeftMissing}
+            onClick={handleCheck}
+            label={pickLocalized({ ar: 'تحقق', ku: 'Kontrol bike', en: 'Check' }, language)}
+          />
         ) : (
-          <ContinueButton onClick={onNext} label={isAr ? 'متابعة' : language === 'ku' ? 'Bidomîne' : 'Continue'} />
+          <ContinueButton onClick={onNext} label={pickLocalized({ ar: 'متابعة', ku: 'Bidomîne', en: 'Continue' }, language)} />
         )}
       </div>
     </div>

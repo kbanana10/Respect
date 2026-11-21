@@ -21,7 +21,7 @@ export type UILang = 'ar' | 'ku' | 'en';
 
 /** Pick the single language string for the current UI language. */
 export function pickLocalized(text: LocalizedText, language: UILang): string {
-  return language === 'ar' ? text.ar : language === 'ku' ? text.ku : text.en;
+  return text[language];
 }
 
 /**

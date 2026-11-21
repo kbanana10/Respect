@@ -1,11 +1,27 @@
-import React, { useEffect, useRef, useState } from 'react';
+/**
+ * Roadmap.tsx — Unified Visual Learning Map (/roadmap)
+ *
+ * Displays a winding vertical milestone trail from Unit 0 (Hawar Foundations)
+ * through A1 → A2 → B1 → B2 → C1, with tri-lingual titles/descriptions,
+ * SM-2 Smart Review & Fix Mistakes banners, Adult "Test Out" unlock option,
+ * and an accessible lesson preview sheet with live Kurmanji audio.
+ */
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { getDueItems } from '../services/SpacedRepetitionService';
 import { cn } from '../utils/cn';
-import { learningPath, CEFRLevel, Lesson } from '../data/learningPath';
-import { t } from '../localization/translations';
-import { getAdaptiveLevelId, filterReviewableIds } from '../features/quiz/utils/questionGenerator';
+import {
+  learningPath,
+  getLevelTitle,
+  getLevelDesc,
+  getLessonTitle,
+  getLessonDesc,
+  type CEFRLevel,
+  type Lesson,
+} from '../data/learningPath';
+import { t, pickLocalized } from '../localization/translations';
+import { filterReviewableIds } from '../features/quiz/utils/questionGenerator';
 import { useAppTour } from '../features/tour/useAppTour';
 import {
   ROADMAP_TOUR_ID,
@@ -15,85 +31,43 @@ import {
   getFirstActionableLessonId,
   isTourCompleted,
 } from '../features/tour/tours';
-import { motion, AnimatePresence } from 'motion/react';
-import { AudioButton } from '../components/AudioButton';
+import { motion } from 'motion/react';
+import { AudioButton } from '../features/audio/components/AudioButton';
+import { Modal, Button, Spinner } from '../components/ui';
 import {
-  Lock,
-  CheckCircle2,
-  ChevronRight,
-  Play,
-  Star,
-  RotateCcw,
-  Sparkles,
-  X,
-  Circle,
-  Compass,
-  Compass as CompassIcon,
-  Flame,
-  Trophy,
-  BookOpen,
-  Globe,
-  // Icons referenced by lesson `icon` string fields.
-  Briefcase,
-  Car,
-  Cat,
-  Heart,
-  Landmark,
-  Laptop,
-  MessageCircle,
-  Plane,
-  Stethoscope,
-  TreePine,
-  Users,
-  Utensils,
-  Clock,
-  Link,
-  Scale,
-  type LucideIcon, Brain
+  Lock, CheckCircle2, Play, Star, RotateCcw, Sparkles, Circle,
+  Compass, Flame, Trophy, BookOpen, Globe, Briefcase, Car, Cat, Heart,
+  Landmark, Laptop, MessageCircle, Plane, Stethoscope, TreePine, Users,
+  Utensils, Clock, Link, Scale, Brain, Unlock, type LucideIcon,
 } from 'lucide-react';
 
-
-/**
- * AUDIT FIX: this file used `import * as Icons from 'lucide-react'` plus a
- * dynamic `Icons[iconName]` lookup. A namespace import with a computed key is
- * un-tree-shakeable, so the *entire* lucide library was pulled into the bundle
- * — the Roadmap chunk alone was 808 kB (153 kB gzip) for what is effectively
- * 16 glyphs. An explicit registry restores tree shaking.
- */
 const LESSON_ICONS = {
   Briefcase, Car, Cat, Heart, Landmark, Laptop, MessageCircle,
   Plane, Stethoscope, TreePine, Users, Utensils,
-  Clock, Link, Scale, BookOpen, Globe, Compass, Flame, Trophy,
+  Clock, Link, Scale, BookOpen, Globe, Compass, Flame, Trophy, Sparkles,
 } satisfies Record<string, LucideIcon>;
 
-const renderIcon = (iconName: string) => {
-  const IconComponent = LESSON_ICONS[iconName] ?? Circle;
-  return <IconComponent className="w-8 h-8 opacity-80 group-hover:opacity-100 transition-opacity" />;
-};
+const LESSON_ICON_LOOKUP = new Map<string, LucideIcon>(Object.entries(LESSON_ICONS));
+
+function renderLessonIcon(iconName: string) {
+  const IconComponent = LESSON_ICON_LOOKUP.get(iconName) ?? Circle;
+  return <IconComponent className="w-7 h-7" aria-hidden="true" />;
+}
 
 export function Roadmap() {
-  const { user, userData, updateUserData, language, loading } = useAuth();
+  const { userData, updateUserData, language, loading } = useAuth();
   const navigate = useNavigate();
-  
-  // Dynamic state for the selected roadmap node
+  const isKidsMode = userData?.learnerMode === 'kids';
+
   const [selectedNode, setSelectedNode] = useState<{
-    type: 'vocabulary';
-    id: string;
-    titleEn: string;
-    titleAr: string;
-    icon: string;
-    xpReward: number;
-    lesson?: Lesson; 
+    lesson: Lesson;
     level: CEFRLevel;
+    status: 'completed' | 'active' | 'locked';
   } | null>(null);
 
-  // GUIDED TOUR (Driver.js): second leg of the welcome chain. It only runs
-  // when the Dashboard leg armed the session flag (i.e. the learner tapped
-  // the highlighted Roadmap tab), and finishes on an interactive checkpoint:
-  // tapping the first playable lesson node. Completing it pays the one-time
-  // gem bonus (guarded inside useAppTour).
   const { startTour } = useAppTour();
   const tourAttemptedRef = useRef(false);
+
   useEffect(() => {
     if (loading && !userData) return;
     if (tourAttemptedRef.current) return;
@@ -104,13 +78,15 @@ export function Roadmap() {
       chain = null;
     }
     if (chain !== 'roadmap') return;
-    // Debounced start (same pattern as the Dashboard leg): profile writes
-    // re-run this effect, so the flag/ref are only committed when the timer
-    // actually fires after the map has settled.
+
     const timer = window.setTimeout(() => {
       if (tourAttemptedRef.current) return;
       tourAttemptedRef.current = true;
-      try { sessionStorage.removeItem(TOUR_CHAIN_STORAGE_KEY); } catch { /* best effort */ }
+      try {
+        sessionStorage.removeItem(TOUR_CHAIN_STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
       if (isTourCompleted(ROADMAP_TOUR_ID, userData)) return;
       const lessonId = getFirstActionableLessonId(userData);
       if (!lessonId) return;
@@ -125,693 +101,378 @@ export function Roadmap() {
 
   if (loading && !userData) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 text-slate-400">
-        <div className="w-9 h-9 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-xs font-black tracking-wide">
-          {language !== 'ar' ? 'Loading roadmap...' : 'جاري تحميل الخارطة...'}
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <Spinner size="lg" label={t(language, 'loading')} showLabel />
       </div>
     );
   }
 
-  const safeUserData = userData || {
-    xp: 0,
-    level: 1,
-    gems: 100,
-    streak: 0,
-    completedLessons: [],
-    unlockedLevels: ['A1']
-  };
+  const userXp = userData?.xp ?? 0;
+  const completedLessons = userData?.completedLessons ?? [];
+  const unlockedLevels = new Set(userData?.unlockedLevels ?? ['U0', 'A1']);
+  const dueCardsCount = getDueItems(userData?.reviewDeck ?? {}).length;
+  const mistakesCount = filterReviewableIds(userData?.wrongAnswersHistory ?? []).length;
 
-  const userLevel = safeUserData.level || 1;
-  const userXp = safeUserData.xp || 0;
-  const completedLessons = safeUserData.completedLessons || [];
-
-  /**
-   * Constructs the list of vocabulary nodes for an adventure island
-   */
-  const getLevelNodes = (lvl: CEFRLevel) => {
-    const list: Array<{
-      type: 'vocabulary';
-      id: string;
-      titleEn: string;
-      titleAr: string;
-      icon: string;
-      xpReward: number;
-      lesson?: Lesson;
-    }> = [];
-
-    lvl.lessons.forEach(l => {
-      list.push({
-        type: 'vocabulary',
-        id: l.id,
-        titleEn: l.titleEn,
-        titleAr: l.titleAr,
-        icon: l.icon,
-        xpReward: l.xpReward,
-        lesson: l
-      });
-    });
-
-    // (Grammar milestones were removed with the Grammar feature.)
-    return list;
-  };
-
-  // Compute a single sequentially flattened track of all game nodes
-  const allFlatNodes = learningPath.flatMap(lvl => 
-    getLevelNodes(lvl).map(node => ({ ...node, level: lvl }))
+  const allFlatNodes = learningPath.flatMap((lvl) =>
+    lvl.lessons.map((lesson) => ({ lesson, level: lvl })),
   );
 
-  const getNodeStatus = (nodeId: string, level: CEFRLevel) => {
-    const isLevelUnlocked = userXp >= level.requiredXp;
-    if (!isLevelUnlocked) return 'locked';
-    
-    const flatIndex = allFlatNodes.findIndex(n => n.id === nodeId);
-    if (flatIndex === 0) {
-      return completedLessons.includes(nodeId) ? 'completed' : 'active';
+  const isLevelOpen = (lvl: CEFRLevel) =>
+    userXp >= lvl.requiredXp || unlockedLevels.has(lvl.id) || lvl.id === 'U0' || lvl.id === 'A1';
+
+  const getNodeStatus = (lessonId: string, level: CEFRLevel): 'completed' | 'active' | 'locked' => {
+    if (!isLevelOpen(level)) return 'locked';
+    if (completedLessons.includes(lessonId)) return 'completed';
+    const flatIdx = allFlatNodes.findIndex((n) => n.lesson.id === lessonId);
+    if (flatIdx <= 0) return 'active';
+    const prev = allFlatNodes[flatIdx - 1];
+    if (completedLessons.includes(prev.lesson.id) || prev.level.id !== level.id) {
+      return 'active';
     }
-    
-    if (completedLessons.includes(nodeId)) {
-      return 'completed';
-    }
-    
-    const prevNode = allFlatNodes[flatIndex - 1];
-    const isPrevCompleted = completedLessons.includes(prevNode.id);
-    
-    return isPrevCompleted ? 'active' : 'locked';
+    return 'locked';
   };
 
-  /**
-   * BADGE↔QUIZ CONSISTENCY FIX: both counts run through
-   * `filterReviewableIds`, the same universe the review-quiz generator
-   * draws from. Previously the badges counted RAW deck/history entries, so
-   * ids with no backing content (or, before the generator fix, alphabet
-   * letters) produced "3 words due today" cards that opened into
-   * "All caught up!" empty states.
-   */
-  const dueReviewsCount = filterReviewableIds(getDueItems(userData?.reviewDeck || {}).map(d => d.id)).length;
-  const mistakesCount = filterReviewableIds(userData?.wrongAnswersHistory || []).length;
-
-  /**
-   * NEW-USER GATING (maintainer request): the Smart Review hub is only
-   * meaningful once the learner has actually practiced — before that,
-   * "All reviews completed" / "No mistake backlog" were empty noise on a
-   * fresh account. It appears after any roadmap or practice-game activity.
-   * "My Level Practice" additionally waits for the FIRST finished level
-   * node (completed lesson), because its adaptive pool is built from words
-   * the learner has genuinely encountered; its level badge keeps updating
-   * automatically as they progress.
-   */
-  const hasPracticeActivity =
-    completedLessons.length > 0 ||
-    mistakesCount > 0 ||
-    Object.keys(userData?.reviewDeck || {}).length > 0 ||
-    Object.keys(userData?.gameScores || {}).length > 0;
-  const showLevelPractice = completedLessons.length > 0;
-
-  const handleNodeLaunch = (node: typeof selectedNode) => {
-    if (!node) return;
-    setSelectedNode(null);
-    navigate(`/quiz/${node.id}`);
-  };
-
-  const handleResetProgress = async () => {
-    if (window.confirm(language !== 'ar' 
-      ? 'Are you sure you want to reset all your learning path completions? Your XP will remain safe.' 
-      : 'هل أنت متأكد من أنك تود تصفير محصلة تقدم الدروس المكتملة؟ نقاط خبرتك الإجمالية ستبقى آمنة.')) {
-      await updateUserData({ completedLessons: [] });
+  const handleUnlockLevelTestOut = async (level: CEFRLevel) => {
+    const nextUnlocked = Array.from(new Set([...unlockedLevels, level.id]));
+    await updateUserData({ unlockedLevels: nextUnlocked });
+    if (level.lessons[0]) {
+      navigate(`/quiz/${level.lessons[0].id}`);
     }
   };
 
-  const handleNodeClick = (
-    node: {
-      type: 'vocabulary';
-      id: string;
-      titleEn: string;
-      titleAr: string;
-      icon: string;
-      xpReward: number;
-      lesson?: Lesson;
+  const copy = pickLocalized(language, {
+    en: {
+      mapTitle: isKidsMode ? 'Adventure Map' : 'Learning Path',
+      mapDesc: isKidsMode
+        ? 'Follow the golden trail from Hawar Sounds to full Kurdish adventures!'
+        : 'Step-by-step Kurmanji curriculum from Unit 0 Hawar Foundations through C1.',
+      completed: (done: number, total: number) => `${done} / ${total} completed`,
+      dueTitle: `${dueCardsCount} words due for Smart Review`,
+      dueAction: 'Review Now',
+      mistakesTitle: `${mistakesCount} mistakes ready to practice`,
+      mistakesAction: 'Fix Mistakes',
+      unlockTestOut: 'Jump Here (Test Out)',
+      needsXp: (xp: number) => `Unlocks at ${xp} XP`,
+      startLesson: 'Start Lesson',
+      replayLesson: 'Practice Again',
+      lockedHint: 'Complete the previous milestone to unlock this lesson.',
+      previewWords: 'Words in this lesson',
+      close: 'Close',
+      statusDone: 'Completed',
+      statusNext: 'Next Up',
+      statusLocked: 'Locked',
     },
-    level: CEFRLevel,
-  ) => {
-    const status = getNodeStatus(node.id, level);
-    if (status === 'locked') {
-      return;
-    }
-    setSelectedNode({ ...node, level });
-  };
+    ar: {
+      mapTitle: isKidsMode ? 'خريطة المغامرة' : 'مسار التعلّم',
+      mapDesc: isKidsMode
+        ? 'اتبع المسار الذهبي من أصوات الهوار إلى مغامرات الكردية الممتعة!'
+        : 'منهج الكورمانجية المتدرج من الوحدة 0 (أساسيات الهوار) حتى المستوى C1.',
+      completed: (done: number, total: number) => `${done} / ${total} مكتمل`,
+      dueTitle: `${dueCardsCount} كلمة جاهزة للمراجعة الذكية`,
+      dueAction: 'ابدأ المراجعة',
+      mistakesTitle: `${mistakesCount} أخطاء جاهزة للتصحيح`,
+      mistakesAction: 'صحّح الأخطاء',
+      unlockTestOut: 'افتح هذا المستوى (اختبار تخطي)',
+      needsXp: (xp: number) => `يُفتح عند ${xp} XP`,
+      startLesson: 'ابدأ الدرس',
+      replayLesson: 'تدرّب مجدداً',
+      lockedHint: 'أكمل المحطة السابقة لفتح هذا الدرس.',
+      previewWords: 'كلمات هذا الدرس',
+      close: 'إغلاق',
+      statusDone: 'مكتمل',
+      statusNext: 'الدرس التالي',
+      statusLocked: 'مغلق',
+    },
+    ku: {
+      mapTitle: isKidsMode ? 'Nexşeya Serpêhatiyê' : 'Rêya Fêrbûnê',
+      mapDesc: isKidsMode
+        ? 'Ji Dengên Hawarê heta serpêhatiyên kurdî rêya zêrîn bişopîne!'
+        : 'Bernameya Kurmancî ya gav bi gav ji Yekîneya 0 (Hawar) heta C1.',
+      completed: (done: number, total: number) => `${done} / ${total} temam`,
+      dueTitle: `${dueCardsCount} peyv ji bo Dubarekirina Jîr amade ne`,
+      dueAction: 'Niha Dubare Bike',
+      mistakesTitle: `${mistakesCount} çewtî ji bo rastkirinê amade ne`,
+      mistakesAction: 'Çewtiyan Rast Bike',
+      unlockTestOut: 'Vê Astê Veke (Testa Derbasbûnê)',
+      needsXp: (xp: number) => `Li ${xp} XP vedibe`,
+      startLesson: 'Dersê Dest Pê Bike',
+      replayLesson: 'Dîsa Biceribîne',
+      lockedHint: 'Ji bo vekirina vê dersê gava berê temam bike.',
+      previewWords: 'Peyvên vê dersê',
+      close: 'Bigire',
+      statusDone: 'Temam',
+      statusNext: 'Gava Pêş',
+      statusLocked: 'Girtî',
+    },
+  });
 
-  // Recommends the absolute next actionable lesson
-  const getNextPracticableLesson = (): { lesson: Lesson; level: CEFRLevel } | null => {
-    for (const lvl of learningPath) {
-      if (userXp >= lvl.requiredXp) {
-        for (const les of lvl.lessons) {
-          if (!completedLessons.includes(les.id)) {
-            return { lesson: les, level: lvl };
-          }
-        }
-      }
-    }
-    if (learningPath.length > 0 && learningPath[0].lessons.length > 0) {
-      return { lesson: learningPath[0].lessons[0], level: learningPath[0] };
-    }
-    return null;
-  };
+  const totalCompleted = allFlatNodes.filter((n) => completedLessons.includes(n.lesson.id)).length;
 
   return (
-    <div className="min-h-full bg-slate-50 dark:bg-slate-950 p-4 pb-24 text-slate-800 dark:text-slate-100 font-sans leading-relaxed selection:bg-indigo-100">
-      
-      {/* 1. Header Navigation Bar */}
-      <div className="flex items-center justify-between py-3 mb-4 max-w-3xl mx-auto">
-        <div className="flex items-center gap-3">
+    <div className="p-4 lg:p-8 pb-28 max-w-3xl mx-auto space-y-6">
+      {/* Header Summary Card */}
+      <div className="bg-white dark:bg-slate-900 border border-line-soft dark:border-slate-800 rounded-3xl p-6 shadow-flat space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white leading-none font-display">
-              {language !== 'ar' ? 'Quest Trail' : 'خريطة التعلم التفاعلية'}
-            </h2>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1">
-              <CompassIcon className="w-3.5 h-3.5 text-indigo-500 animate-spin" style={{ animationDuration: '6s' }} />
-              {language !== 'ar' ? 'Complete vocabulary lessons & milestones' : 'أنهِ الدروس والوحدات التفاعلية كالمحترفين'}
-            </p>
+            <h2 className="text-2xl font-black text-ink tracking-tight">{copy.mapTitle}</h2>
+            <p className="text-sm text-muted font-semibold mt-1">{copy.mapDesc}</p>
           </div>
-        </div>
-
-        <button 
-          onClick={handleResetProgress}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all cursor-pointer border-none bg-transparent"
-          title={language !== 'ar' ? 'Reset Progress' : 'إعادة تعيين التقدم'}
-          aria-label={language !== 'ar' ? 'Reset Progress' : 'إعادة تعيين التقدم'}
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* 2. Professional Academic Progress Summary Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 shadow-flat mb-6 border border-line-soft relative overflow-hidden group max-w-3xl mx-auto">
-        <CompassIcon className="absolute right-[-40px] bottom-[-40px] w-48 h-48 opacity-[0.06] text-slate-500 transform rotate-12 select-none pointer-events-none group-hover:scale-110 transition-transform duration-700" />
-        
-        <div className="flex justify-between items-start mb-4 relative z-10">
-          <div>
-            <span className="text-[9px] bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] font-black px-2.5 py-1 rounded-full uppercase tracking-wider whitespace-nowrap inline-block">
-              {language !== 'ar' ? 'Kurdish Quest Scholar' : 'أكاديمية اللغة الكوردية'}
-            </span>
-            <h3 className="text-2xl font-black mt-1.5 leading-tight tracking-tight text-ink">
-              {/* UX AUDIT FIX: this rendered the raw internal avatar id
-                  ("Learner av-1") to every user with a chosen avatar. Show
-                  the learner's actual name, falling back to the earned title. */}
-              {user?.displayName || (userXp > 305 ? 'Academic Scholar' : 'Kurdish Learner')}
-            </h3>
-          </div>
-          <div className="flex gap-1.5 text-xs font-extrabold items-center bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 border border-orange-200/60 dark:border-orange-900/50 px-3 py-1.5 rounded-full shrink-0">
-            <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
-            <span>{userData.streak || 0} {language !== 'ar' ? 'Day Streak' : 'أيام متتالية'}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-line relative z-10">
-          <div className="bg-surface-2 p-2.5 rounded-2xl text-center">
-            <span className="text-[9px] text-muted uppercase font-black block">{language !== 'ar' ? 'Rank XP' : 'نقاط الخبرة'}</span>
-            <span className="text-sm font-black text-[#B8860B] dark:text-[#FFCE6B] flex items-center justify-center gap-1 font-mono pt-0.5">
-              <Star className="w-3.5 h-3.5 fill-current" />
-              {userXp}
-            </span>
-          </div>
-          <div className="bg-surface-2 p-2.5 rounded-2xl text-center">
-            <span className="text-[9px] text-muted uppercase font-black block">{language !== 'ar' ? 'Completed' : 'أنهيت'}</span>
-            <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1 font-mono pt-0.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {completedLessons.length}
-            </span>
-          </div>
-          <div className="bg-surface-2 p-2.5 rounded-2xl text-center">
-            <span className="text-[9px] text-muted uppercase font-black block">{language !== 'ar' ? 'Level' : 'المستوى'}</span>
-            <span className="text-sm font-black text-purple-600 dark:text-purple-400 flex items-center justify-center gap-1 font-mono pt-0.5">
-              <Trophy className="w-3.5 h-3.5" />
-              {userLevel}
-            </span>
-          </div>
+          <span className="px-3.5 py-1.5 rounded-full bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] text-xs font-black tabular-nums">
+            {copy.completed(totalCompleted, allFlatNodes.length)}
+          </span>
         </div>
       </div>
 
-      {/* Smart Review hub — relocated from the Dashboard (its natural home:
-          the practice page). SRS queue + mistake backlog. Hidden for brand-new
-          accounts until there is real activity to review. */}
-      {hasPracticeActivity && (
-      <div className="space-y-2.5 mb-6 max-w-3xl mx-auto">
-        <h3 className="text-sm font-black text-ink px-1 uppercase tracking-wider">
-          {language !== 'ar' ? 'Smart Review' : 'المراجعة الذكية'}
-        </h3>
+      {/* Review Action Strips (SM-2 + Mistakes) */}
+      {(dueCardsCount > 0 || mistakesCount > 0) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* SRS Due Review Card */}
-          <motion.div
-            onClick={() => navigate('/quiz/srs_review')}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            className={cn(
-              "border-2 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-2xs cursor-pointer transition-all relative overflow-hidden",
-              dueReviewsCount > 0 
-                ? "bg-surface-2 border-brand/50 hover:border-brand" 
-                : "bg-surface border-line hover:border-line-soft"
-            )}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={cn(
-                "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border-2",
-                dueReviewsCount > 0 
-                  ? "bg-brand/10 text-brand border-brand/30" 
-                  : "bg-surface-2 text-muted border-line"
-              )}>
-                <RotateCcw className="w-5 h-5" />
+          {dueCardsCount > 0 && (
+            <button
+              type="button"
+              onClick={() => navigate('/quiz/srs_review')}
+              className="bg-emerald-50 dark:bg-emerald-950/35 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-4 flex items-center justify-between gap-3 text-start cursor-pointer hover:border-emerald-400"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <RotateCcw className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="text-xs font-black text-emerald-900 dark:text-emerald-100 leading-snug">
+                  {copy.dueTitle}
+                </span>
               </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-black text-ink truncate">
-                    {language !== 'ar' ? 'Spaced Reviews' : 'المراجعة المتباعدة'}
-                  </h4>
-                  {dueReviewsCount > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-black bg-brand text-on-brand rounded-full">
-                      {dueReviewsCount}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted font-medium truncate mt-0.5">
-                  {dueReviewsCount > 0 
-                    ? (language !== 'ar' ? `${dueReviewsCount} ${dueReviewsCount === 1 ? 'word' : 'words'} due today` : `${dueReviewsCount} كلمة بحاجة للمراجعة`)
-                    : (language !== 'ar' ? 'All reviews completed' : 'تمت جميع مراجعات اليوم')}
-                </p>
+              <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-extrabold shrink-0">
+                {copy.dueAction}
+              </span>
+            </button>
+          )}
+          {mistakesCount > 0 && (
+            <button
+              type="button"
+              onClick={() => navigate('/quiz/review_mistakes')}
+              className="bg-amber-50 dark:bg-amber-950/35 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 flex items-center justify-between gap-3 text-start cursor-pointer hover:border-amber-400"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <Brain className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="text-xs font-black text-amber-900 dark:text-amber-100 leading-snug">
+                  {copy.mistakesTitle}
+                </span>
               </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted shrink-0 rtl:-scale-x-100" />
-          </motion.div>
-
-          {/* Mistakes Practice Card */}
-          <motion.div
-            onClick={() => navigate('/quiz/review_mistakes')}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            className={cn(
-              "border-2 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-2xs cursor-pointer transition-all relative overflow-hidden",
-              mistakesCount > 0 
-                ? "bg-surface-2 border-warning/50 hover:border-warning" 
-                : "bg-surface border-line hover:border-line-soft"
-            )}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className={cn(
-                "w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border-2",
-                mistakesCount > 0 
-                  ? "bg-warning/10 text-warning border-warning/30" 
-                  : "bg-surface-2 text-muted border-line"
-              )}>
-                <Brain className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-black text-ink truncate">
-                    {language !== 'ar' ? 'Fix Mistakes' : 'معالجة الأخطاء'}
-                  </h4>
-                  {mistakesCount > 0 && (
-                    <span className="px-2 py-0.5 text-[10px] font-black bg-warning text-black rounded-full">
-                      {mistakesCount}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-muted font-medium truncate mt-0.5">
-                  {mistakesCount > 0 
-                    ? (language !== 'ar' ? `${mistakesCount} weak ${mistakesCount === 1 ? 'point' : 'points'} logged` : `${mistakesCount} نقاط تحتاج للتركيز`)
-                    : (language !== 'ar' ? 'No mistake backlog' : 'سجل أخطائك نظيف')}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted shrink-0 rtl:-scale-x-100" />
-          </motion.div>
-
-          {/* Adaptive Level Practice — personalized quiz built from the
-              user's unlocked levels and the words they have met so far.
-              Unlocks after the FIRST finished level node; badge updates
-              with the learner's live level. */}
-          {showLevelPractice && (
-          <motion.div
-            onClick={() => navigate('/quiz/adaptive_practice')}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
-            className="sm:col-span-2 border-2 border-brand/50 hover:border-brand bg-surface-2 rounded-3xl p-4 flex items-center justify-between gap-3 shadow-2xs cursor-pointer transition-all relative overflow-hidden"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border-2 bg-brand/10 text-brand border-brand/30">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-black text-ink truncate">
-                    {t(language, 'quiz_mode_adaptive_title')}
-                  </h4>
-                  <span className="px-2 py-0.5 text-[10px] font-black bg-brand text-on-brand rounded-full">
-                    {getAdaptiveLevelId(userData)}
-                  </span>
-                </div>
-                <p className="text-xs text-muted font-medium truncate mt-0.5">
-                  {t(language, 'quiz_mode_adaptive_desc')}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted shrink-0 rtl:-scale-x-100" />
-          </motion.div>
+              <span className="px-3 py-1.5 rounded-xl bg-[#FFB300] text-[#432C00] text-xs font-extrabold shrink-0">
+                {copy.mistakesAction}
+              </span>
+            </button>
           )}
         </div>
-      </div>
       )}
 
-      {/* 3. Winding Game Map Valley Landscape (Continuous Worlds layout) */}
-      <div className="space-y-12 max-w-3xl mx-auto pt-2">
-        {learningPath.map((lvl, lvlIdx) => {
-          const isLvlUnlocked = userXp >= lvl.requiredXp;
-          const levelNodes = getLevelNodes(lvl);
-          const mapHeight = levelNodes.length * 110;
+      {/* Winding Vertical Trail by Unit / CEFR Level */}
+      <div className="space-y-8">
+        {learningPath.map((lvl) => {
+          const open = isLevelOpen(lvl);
+          const doneInUnit = lvl.lessons.filter((l) => completedLessons.includes(l.id)).length;
 
           return (
-            <div 
+            <section
               key={lvl.id}
-              className="relative bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800/80 rounded-[36px] shadow-sm p-6 hover:shadow-md transition-shadow"
+              className="bg-white dark:bg-slate-900 border border-line-soft dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-flat space-y-6"
             >
-              {/* World/Section Title Header plaque */}
-              <div className={`p-4 rounded-[24px] bg-gradient-to-r ${lvl.color} text-white relative overflow-hidden group mb-4 shadow-sm`}>
-                <Globe className="absolute right-[-10px] bottom-[-10px] w-20 h-20 opacity-10 text-white select-none pointer-events-none group-hover:scale-110 transition-transform duration-500" />
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] bg-white/20 font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    {language !== 'ar' ? `WORLD 0${lvlIdx + 1}` : `العالم 0${lvlIdx + 1}`}
-                  </span>
-                  {isLvlUnlocked && (
-                    <span className="text-[9px] text-amber-300 font-black tracking-wide bg-black/15 px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" />
-                      {language !== 'ar' ? 'ACTIVE REGION' : 'إقليم نشط'}
+              {/* Unit Header */}
+              <div className="flex items-start justify-between gap-3 flex-wrap border-b border-line dark:border-slate-800 pb-4">
+                <div className="space-y-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-lg bg-[#FFB300] text-[#432C00] text-xs font-black">
+                      {lvl.id}
                     </span>
+                    <h3 className="text-lg font-black text-ink leading-tight">
+                      {getLevelTitle(lvl, language)}
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted font-semibold">{getLevelDesc(lvl, language)}</p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {open ? (
+                    <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full tabular-nums">
+                      {doneInUnit}/{lvl.lessons.length}
+                    </span>
+                  ) : (
+                    <>
+                      <span className="text-xs font-bold text-muted bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">
+                        {copy.needsXp(lvl.requiredXp)}
+                      </span>
+                      {!isKidsMode && (
+                        <button
+                          type="button"
+                          onClick={() => void handleUnlockLevelTestOut(lvl)}
+                          className="min-h-[40px] px-3 py-1.5 rounded-xl bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] border border-[#FFB300]/40 text-xs font-black flex items-center gap-1.5 cursor-pointer hover:bg-[#FFE7B3]"
+                        >
+                          <Unlock className="w-3.5 h-3.5" />
+                          {copy.unlockTestOut}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
-                <h3 className="text-base font-black mt-2 leading-tight tracking-tight">
-                  {lvl.title}
-                </h3>
-                <p className="text-[11px] text-white/80 mt-1 leading-snug font-semibold">
-                  {language !== 'ar' ? lvl.descEn : lvl.descAr}
-                </p>
               </div>
 
-              {/* Responsive Game Winding Trail Grid block */}
-              <div 
-                className="relative max-w-[400px] w-full mx-auto select-none mt-4 transition-all"
-                style={{ height: `${mapHeight}px` }}
-              >
-                {/* A. Background SVG spline road tracking connector */}
-                <svg 
-                  className="absolute inset-0 w-full h-full pointer-events-none z-0"
-                  viewBox={`0 0 400 ${mapHeight}`}
-                  preserveAspectRatio="none"
-                >
-                  {levelNodes.map((node, idx) => {
-                    if (idx === 0) return null;
-
-                    const prevOffset = Math.sin((idx - 1) * 1.55) * 110;
-                    const prevX = 200 + prevOffset;
-                    const prevY = (idx - 1) * 110 + 55;
-
-                    const currOffset = Math.sin(idx * 1.55) * 110;
-                    const currX = 200 + currOffset;
-                    const currY = idx * 110 + 55;
-
-                    // Determine segment color dynamically
-                    const currentStatus = getNodeStatus(node.id, lvl);
-                    let strokeColor = 'stroke-slate-200 dark:stroke-slate-800';
-                    let strokeDash = '6,6';
-                    let strokeWidth = 5;
-
-                    if (currentStatus === 'completed') {
-                      strokeColor = 'stroke-emerald-400 dark:stroke-emerald-500';
-                      strokeDash = '0'; // solid lines
-                      strokeWidth = 6;
-                    } else if (currentStatus === 'active') {
-                      strokeColor = 'stroke-indigo-400 dark:stroke-indigo-500';
-                      strokeDash = '4,4';
-                      strokeWidth = 5;
-                    }
-
-                    return (
-                      <path
-                        key={`line-${node.id}`}
-                        d={`M ${prevX} ${prevY} C ${prevX} ${prevY + 55}, ${currX} ${currY - 55}, ${currX} ${currY}`}
-                        fill="none"
-                        className={`${strokeColor} transition-all duration-300`}
-                        strokeWidth={strokeWidth}
-                        strokeDasharray={strokeDash}
-                        strokeLinecap="round"
-                      />
-                    );
-                  })}
-                </svg>
-
-                {/* B. Absolute Interactive Stepping Nodes */}
-                {levelNodes.map((node, idx) => {
-                  const status = getNodeStatus(node.id, lvl);
-                  const isCompleted = status === 'completed';
-                  const isActive = status === 'active';
-                  const isLocked = status === 'locked';
-
-                  const offset = Math.sin(idx * 1.55) * 110;
-                  const leftOffset = `calc(50% + ${offset}px)`;
-                  const topOffset = `${idx * 110 + 23}px`;
+              {/* Winding Milestone Nodes */}
+              <div className="flex flex-col items-center gap-5 relative py-2">
+                {lvl.lessons.map((lesson, idx) => {
+                  const status = getNodeStatus(lesson.id, lvl);
+                  const offsetClass =
+                    idx % 3 === 1
+                      ? 'sm:translate-x-10'
+                      : idx % 3 === 2
+                        ? 'sm:-translate-x-10'
+                        : '';
 
                   return (
-                    <div 
-                      key={node.id}
-                      className="absolute transform -translate-x-1/2 z-10"
-                      style={{ left: leftOffset, top: topOffset }}
-                    >
+                    <div key={lesson.id} className={cn('w-full max-w-sm transition-transform', offsetClass)}>
                       <motion.button
-                        id={`roadmap-node-${node.id}`}
-                        aria-label={
-                          isLocked
-                            ? `${language !== 'ar' ? (node.titleEn || node.id) : (node.titleAr || node.id)} (${language !== 'ar' ? 'locked' : 'مقفل'})`
-                            : language !== 'ar'
-                              ? `${node.titleEn || node.id}${isCompleted ? ' — completed' : ' — start lesson'}`
-                              : `${node.titleAr || node.id}${isCompleted ? ' — مكتمل' : ' — ابدأ الدرس'}`
-                        }
-                        whileHover={{ scale: !isLocked ? 1.08 : 1 }}
-                        whileTap={{ scale: !isLocked ? 0.95 : 1 }}
-                        onClick={() => handleNodeClick(node, lvl)}
-                        className={`w-16 h-16 flex items-center justify-center relative transition-all focus:outline-none cursor-pointer rounded-full border-4 ${
-                          isCompleted
-                            ? 'bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-500 border-white dark:border-slate-800 text-white shadow-emerald-500/10'
-                            : isActive
-                            ? 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 border-white dark:border-slate-800 text-white ring-4 ring-indigo-500/15 shadow-indigo-600/20'
-                            : 'bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600 cursor-default grayscale'
-                        } shadow-lg`}
+                        type="button"
+                        data-tour={`roadmap-node-${lesson.id}`}
+                        whileTap={{ scale: 0.97 }}
+                        onClick={() => setSelectedNode({ lesson, level: lvl, status })}
+                        className={cn(
+                          'w-full p-4 rounded-3xl border-2 flex items-center gap-4 text-start transition-all cursor-pointer min-h-[76px]',
+                          status === 'completed'
+                            ? 'border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30'
+                            : status === 'active'
+                              ? 'border-[#FFB300] bg-[#FFF6E0] dark:bg-[#3A2F14] shadow-[0_6px_24px_rgba(255,179,0,0.18)]'
+                              : 'border-line-soft dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 opacity-75',
+                        )}
                       >
-                        {/* Interactive glow pulses for active nodes */}
-                        {isActive && (
-                          <>
-                            <div className="absolute inset-0 bg-indigo-500/30 rounded-full animate-ping -z-10 scale-[1.35]" />
-                            <div className="absolute inset-0 bg-indigo-500/20 rounded-full animate-pulse -z-10 scale-[1.15]" />
-                            <div className="absolute inset-x-0 -bottom-5 text-center flex justify-center rotate-0">
-                              <span className="text-[9px] font-black bg-indigo-600 text-white rounded-full px-2 py-0.5 border border-white dark:border-indigo-400 uppercase tracking-widest leading-none shadow-md animate-bounce transform rotate-0 block select-none">
-                                {language !== 'ar' ? 'PLAY' : 'ابدأ'}
-                              </span>
-                            </div>
-                          </>
-                        )}
+                        <div
+                          className={cn(
+                            'w-14 h-14 rounded-2xl flex items-center justify-center shrink-0',
+                            status === 'completed'
+                              ? 'bg-emerald-500 text-white'
+                              : status === 'active'
+                                ? 'bg-[#FFB300] text-[#432C00] shadow-[0_3px_0_#E69500]'
+                                : 'bg-slate-200 dark:bg-slate-700 text-slate-500',
+                          )}
+                        >
+                          {status === 'locked' ? (
+                            <Lock className="w-6 h-6" />
+                          ) : status === 'completed' ? (
+                            <CheckCircle2 className="w-7 h-7" />
+                          ) : (
+                            renderLessonIcon(lesson.icon)
+                          )}
+                        </div>
 
-                        <span className={`${isLocked ? 'opacity-40' : 'opacity-100'} flex justify-center items-center select-none`}>
-                          {renderIcon(node.icon)}
-                        </span>
-
-                        {/* Top corner status badges */}
-                        {isCompleted && (
-                          <div className={`absolute -top-1 -end-1 rounded-full p-0.5 border-2 border-white dark:border-slate-900 shadow-md bg-emerald-500 text-white`}>
-                            <CheckCircle2 className="w-3.5 h-3.5 stroke-3" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-base text-ink truncate">
+                              {getLessonTitle(lesson, language)}
+                            </span>
                           </div>
-                        )}
-
-                        {isLocked && (
-                          <div className={`absolute -top-1 -end-1 bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full p-1 border-2 border-slate-300 dark:border-slate-700 shadow-sm`}>
-                            <Lock className="w-3 h-3" />
+                          <p className="text-xs text-muted font-semibold truncate mt-0.5">
+                            {getLessonDesc(lesson, language)}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 text-xs font-extrabold">
+                            <span
+                              className={cn(
+                                status === 'completed'
+                                  ? 'text-emerald-700 dark:text-emerald-300'
+                                  : status === 'active'
+                                    ? 'text-[#8A6100] dark:text-[#FFCE6B]'
+                                    : 'text-muted',
+                              )}
+                            >
+                              {status === 'completed'
+                                ? copy.statusDone
+                                : status === 'active'
+                                  ? copy.statusNext
+                                  : copy.statusLocked}
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span className="text-muted tabular-nums">+{lesson.xpReward} XP</span>
                           </div>
+                        </div>
+
+                        {status === 'active' && (
+                          <span className="w-10 h-10 rounded-full bg-[#FFB300] text-[#432C00] flex items-center justify-center shrink-0">
+                            <Play className="w-4 h-4 fill-current" />
+                          </span>
+                        )}
+                        {status === 'completed' && (
+                          <Star className="w-5 h-5 text-[#FFB300] fill-[#FFB300] shrink-0" />
                         )}
                       </motion.button>
                     </div>
                   );
                 })}
               </div>
-
-              {/* Physical Overlay Lock over locked level worlds */}
-              {!isLvlUnlocked && (
-                <div className="absolute inset-0 bg-slate-900/65 backdrop-blur-xs flex flex-col items-center justify-center text-center p-6 z-20 rounded-[34px]">
-                  <div className="w-14 h-14 bg-slate-950/90 text-slate-400 rounded-3xl flex items-center justify-center border border-slate-800 shadow-lg mb-3">
-                    <Lock className="w-6 h-6 stroke-[2.5]" />
-                  </div>
-                  <h4 className="font-black text-white text-base tracking-tight select-none">
-                    {language !== 'ar' ? `${lvl.id} Island Locked` : `${lvl.id} عالم مغلق`}
-                  </h4>
-                  <p className="text-slate-300 text-[11px] mt-1 font-semibold max-w-[240px] select-none leading-relaxed">
-                    {language !== 'ar' 
-                      ? `Amass ${lvl.requiredXp} XP in primary lesson paths to unlock this adventure island!`
-                      : `جمّع ${lvl.requiredXp} نقطة خبرة لرفع مرتبتك وصياغة هذا العالم!`}
-                  </p>
-                  <div className="mt-4 px-4 py-2 bg-white/20 text-yellow-300 font-extrabold uppercase tracking-widest font-mono text-[9px] select-none rounded-xl border border-white/5">
-                    {language !== 'ar' ? `LOCK LIMIT: ${lvl.requiredXp} XP` : `المطلوب: ${lvl.requiredXp} خبرة`}
-                  </div>
-                </div>
-              )}
-            </div>
+            </section>
           );
         })}
       </div>
 
-      {/* 4. Interactive floating popover drawer of selected node (vocabulary node details) */}
-      <AnimatePresence>
+      {/* Lesson Preview Modal */}
+      <Modal
+        open={selectedNode !== null}
+        onClose={() => setSelectedNode(null)}
+        variant="sheet"
+        title={selectedNode ? getLessonTitle(selectedNode.lesson, language) : ''}
+        description={selectedNode ? getLessonDesc(selectedNode.lesson, language) : ''}
+        closeLabel={copy.close}
+      >
         {selectedNode && (
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-            
-            {/* Modal transparent background backdrop closer */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedNode(null)}
-              className="absolute inset-0"
-            />
+          <div className="space-y-4">
+            <div className="text-xs font-black text-muted uppercase tracking-wider">
+              {copy.previewWords} ({selectedNode.lesson.words.length})
+            </div>
 
-            {/* Premium Drawer Sheet */}
-            <motion.div
-              initial={{ y: "100%", opacity: 0.5 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: "100%", opacity: 0.5 }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="bg-white dark:bg-slate-950 w-full max-w-md rounded-t-[36px] sm:rounded-[36px] overflow-hidden shadow-2xl relative z-10 border border-slate-100 dark:border-slate-800 flex flex-col max-h-[92vh]"
-            >
-              {/* Top graphic colored cover themed to the world level */}
-              <div className={`p-8 bg-gradient-to-br ${selectedNode.level.color} text-white text-center relative flex flex-col items-center justify-center border-b border-white/10 shrink-0`}>
-                
-                {/* Close absolute button */}
-                <button
-                  onClick={() => setSelectedNode(null)}
-                  className="absolute top-4 end-4 p-2.5 bg-black/15 hover:bg-black/25 text-white rounded-full transition-all cursor-pointer border-none"
+            <div className="space-y-2 max-h-60 overflow-y-auto pe-1">
+              {selectedNode.lesson.words.map((word) => (
+                <div
+                  key={word.id}
+                  className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-slate-800/70 rounded-2xl p-3 border border-line-soft dark:border-slate-700"
                 >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className={`w-20 h-20 bg-white/15 backdrop-blur-sm rounded-3xl flex items-center justify-center flex justify-center items-center shadow-md border border-white/10 animate-bounce`}>
-                  <span>
-                    {renderIcon(selectedNode.icon)}
-                  </span>
-                </div>
-
-                <div className="mt-4">
-                  <span className="text-[10px] bg-white/20 text-white font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
-                    {selectedNode.level.title}
-                  </span>
-                  <h3 className="text-xl font-black mt-2 leading-none tracking-tight">
-                    {language !== 'ar' ? selectedNode.titleEn : selectedNode.titleAr}
-                  </h3>
-                </div>
-              </div>
-
-              {/* Node details scrollable zone */}
-              <div className="p-5 overflow-y-auto space-y-4 flex-1">
-                <div>
-                  <h4 className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-widest">
-                    {language !== 'ar' ? 'Adventure Syllabus' : 'منهاج التدريب'}
-                  </h4>
-                  <p className="text-slate-500 dark:text-slate-300 text-xs font-semibold leading-relaxed mt-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl">
-                    {language !== 'ar' ? selectedNode.lesson?.descEn : selectedNode.lesson?.descAr}
-                  </p>
-                </div>
-
-                {/* Star Reward and Progressive Difficulty info indicator */}
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-amber-50/50 dark:bg-amber-950/15 border border-amber-100/50 dark:border-amber-900/30 rounded-2xl p-3 flex flex-col justify-between">
-                    <span className="text-slate-500 dark:text-slate-400 font-bold block mb-1">
-                      {language !== 'ar' ? 'Base Rewards' : 'النقاط الأساسية'}
-                    </span>
-                    <span className="font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <Star className="w-4 h-4 text-amber-500 fill-current" />
-                      +{selectedNode.xpReward} XP
-                    </span>
-                  </div>
-
-                  <div className="bg-indigo-50/50 dark:bg-indigo-950/15 border border-indigo-100/50 dark:border-indigo-900/30 rounded-2xl p-3 flex flex-col justify-between">
-                    <span className="text-slate-500 dark:text-slate-400 font-bold block mb-1">
-                      {language !== 'ar' ? 'Questions Pool' : 'عدد الأسئلة والجهد'}
-                    </span>
-                    <span className="font-black text-indigo-600 dark:text-indigo-400 flex items-center gap-1 text-[11px] truncate">
-                      <Compass className="w-4 h-4 text-indigo-500" />
-                      {(() => {
-                        const levelId = selectedNode.level?.id || 'A1';
-                        if (levelId === 'A1') return language !== 'ar' ? '5 Qs (A1 Easy)' : '5 أسئلة (A1 سهل)';
-                        if (levelId === 'A2') return language !== 'ar' ? '7 Qs (A2 Casual)' : '7 أسئلة (A2 متوسط)';
-                        if (levelId === 'B1') return language !== 'ar' ? '8 Qs (B1 Medium)' : '8 أسئلة (B1 مهارة)';
-                        if (levelId === 'B2') return language !== 'ar' ? '10 Qs (B2 Hard)' : '10 أسئلة (B2 متقدم)';
-                        if (levelId === 'Advanced') return language !== 'ar' ? '12 Qs (C1 Expert)' : '12 سؤال متمكن (C1)';
-                        return language !== 'ar' ? '7 Qs (Normal)' : '7 أسئلة';
-                      })()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Vocabulary checklist preview */}
-                {(
-                  // Targeted Vocabulary Checklist preview
-                  // Targeted Vocabulary Checklist preview
-                  <div className="space-y-2">
-                    <h4 className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-widest">
-                      {language !== 'ar' ? 'Preview Lexicon Words' : 'المفردات التأسيسية المدرجة'}
-                    </h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                      {selectedNode.lesson?.words.map((w) => (
-                        <div 
-                          key={w.id}
-                          className="flex justify-between items-center p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-indigo-200 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl select-none">{w.emoji}</span>
-                            <div>
-                              <div className="font-extrabold text-sm text-slate-900 dark:text-white leading-tight">
-                                <bdi>{w.ku}</bdi>
-                              </div>
-                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-0.5 leading-none">
-                                {language !== 'ar' ? w.en : w.ar}
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <AudioButton 
-                            audioUrl={w.audio}
-                            textToSpeak={w.ku}
-                            className="bg-indigo-50/70 hover:bg-indigo-100/80 dark:bg-slate-800 p-2 text-indigo-600 hover:text-indigo-700"
-                            iconClassName="w-4 h-4"
-                            showProgress={false}
-                          />
-                        </div>
-                      ))}
+                  <div className="flex items-center gap-3 min-w-0">
+                    {word.emoji && (
+                      <span className="text-2xl shrink-0 select-none" aria-hidden="true">
+                        {word.emoji}
+                      </span>
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-black text-sm text-ink" dir="ltr">
+                        {word.ku}
+                      </div>
+                      <div className="text-xs font-semibold text-muted">
+                        {pickLocalized(language, {
+                          en: word.en,
+                          ar: word.ar,
+                          ku: `${word.en} · ${word.ar}`,
+                        })}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
+                  <AudioButton audioUrl={word.audio} textToSpeak={word.ku} className="shrink-0" />
+                </div>
+              ))}
+            </div>
 
-              {/* Action main launching footer launcher */}
-              <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col gap-2 shrink-0">
-                <button
-                  onClick={() => handleNodeLaunch(selectedNode)}
-                  className="w-full py-4.5 text-white font-black text-sm rounded-2xl flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-98 transition-all border-none bg-gradient-to-r from-indigo-600 via-indigo-600 to-indigo-700 hover:shadow-indigo-600/20 shadow-indigo-600/10"
-                >
-                  <Play className="w-4 h-4 fill-current text-indigo-100" />
-                  <span>{language !== 'ar' ? 'Start Active Quiz!' : 'ابدأ تدريب الوحدة التفاعلية!'}</span>
-                  <ChevronRight className="w-4 h-4 rtl:rotate-180" />
-                </button>
-              </div>
-
-            </motion.div>
+            {selectedNode.status === 'locked' ? (
+              <p className="text-xs font-bold text-center text-muted bg-slate-100 dark:bg-slate-800 rounded-2xl p-3">
+                {copy.lockedHint}
+              </p>
+            ) : (
+              <Button
+                variant="primary"
+                size="lg"
+                fullWidth
+                onClick={() => {
+                  const id = selectedNode.lesson.id;
+                  setSelectedNode(null);
+                  navigate(`/quiz/${id}`);
+                }}
+              >
+                {selectedNode.status === 'completed' ? copy.replayLesson : copy.startLesson}
+              </Button>
+            )}
           </div>
         )}
-      </AnimatePresence>
-
+      </Modal>
     </div>
   );
 }

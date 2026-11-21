@@ -16,13 +16,14 @@ import {
   createBackupEnvelope,
   migrateUserData,
   parseAndMigrateBackup,
+  type JsonValue,
 } from '../domain/schema/migrations';
 import { getPlatform } from '../platform';
 import { createLogger } from '../core/logging/logger';
 
 const log = createLogger('OfflineStorage');
 
-export interface PendingSyncMutation {
+interface PendingSyncMutation {
   id: string;
   userId: string;
   type: 'UPDATE_PROGRESS' | 'COMPLETE_LESSON' | 'EARN_XP' | 'CLAIM_REWARD' | 'UPDATE_STREAK';
@@ -78,6 +79,7 @@ class OfflineStorageService {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
 
       request.onupgradeneeded = (event: IDBVersionChangeEvent) => {
+        // SAFETY: `onupgradeneeded` event target is always the IDBOpenDBRequest created on line 78.
         const db = (event.target as IDBOpenDBRequest).result;
         if (!db.objectStoreNames.contains(USER_DATA_STORE)) {
           db.createObjectStore(USER_DATA_STORE);
@@ -102,7 +104,7 @@ class OfflineStorageService {
 
       request.onerror = () => {
         this.dbPromise = null;
-        log.warn('IndexedDB failed to open; using KV fallback', { error: request.error });
+        log.warn('IndexedDB failed to open; using KV fallback', { error: request.error instanceof Error ? request.error : String(request.error) });
         reject(request.error);
       };
     });
@@ -114,7 +116,7 @@ class OfflineStorageService {
    * Stores an immutable pre-migration safety snapshot in IndexedDB `backups` store
    * so legacy user progress is never destroyed during schema upgrades.
    */
-  private async saveSafetySnapshot(rawPayload: unknown, fromVersion: number): Promise<void> {
+  private async saveSafetySnapshot(rawPayload: JsonValue | UserData, fromVersion: number): Promise<void> {
     try {
       const db = await this.getDB();
       if (!db.objectStoreNames.contains(BACKUPS_STORE)) return;
@@ -131,7 +133,7 @@ class OfflineStorageService {
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
-      log.debug('Safety snapshot write skipped', { err });
+      log.debug('Safety snapshot write skipped', { err: err instanceof Error ? err : String(err) });
     }
   }
 
@@ -153,7 +155,7 @@ class OfflineStorageService {
         localStorage.setItem(LOCALSTORAGE_KEY, serialized);
       }
     } catch (e) {
-      log.warn('LocalStorage save failed', { err: e });
+      log.warn('LocalStorage save failed', { err: e instanceof Error ? e : String(e) });
     }
 
     try {
@@ -162,7 +164,7 @@ class OfflineStorageService {
         await platform.kvSet(LOCALSTORAGE_KEY, serialized);
       }
     } catch (e) {
-      log.warn('Native Preferences mirror save failed', { err: e });
+      log.warn('Native Preferences mirror save failed', { err: e instanceof Error ? e : String(e) });
     }
 
     // 2. Tier 2: IndexedDB
@@ -176,7 +178,7 @@ class OfflineStorageService {
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
-      log.warn('IndexedDB saveUserData fallback', { err });
+      log.warn('IndexedDB saveUserData fallback', { err: err instanceof Error ? err : String(err) });
     }
   }
 
@@ -185,20 +187,21 @@ class OfflineStorageService {
    * automatically applying lossless schema migration if needed.
    */
   async getUserData(): Promise<UserData | null> {
-    let rawData: unknown = null;
+    let rawData: JsonValue = null;
 
     // 1. Try IndexedDB first
     try {
       const db = await this.getDB();
-      rawData = await new Promise<unknown>((resolve, reject) => {
+      rawData = await new Promise<JsonValue>((resolve, reject) => {
         const tx = db.transaction(USER_DATA_STORE, 'readonly');
         const store = tx.objectStore(USER_DATA_STORE);
         const req = store.get('current_user');
-        req.onsuccess = () => resolve(req.result ?? null);
+        // SAFETY: USER_DATA_STORE exclusively persists JSON-serializable UserData records.
+        req.onsuccess = () => resolve((req.result as JsonValue) ?? null);
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
-      log.warn('IndexedDB getUserData fallback to KV', { err });
+      log.warn('IndexedDB getUserData fallback to KV', { err: err instanceof Error ? err : String(err) });
     }
 
     // 2. Try native Capacitor Preferences if IndexedDB was empty/evicted (common on iOS WKWebView)
@@ -207,10 +210,13 @@ class OfflineStorageService {
         const platform = getPlatform();
         if (platform.getCapabilities().hasNativeStorage) {
           const nativeRaw = await platform.kvGet(LOCALSTORAGE_KEY);
-          if (nativeRaw) rawData = JSON.parse(nativeRaw);
+          if (nativeRaw) {
+            // SAFETY: JSON.parse output conforms to the recursive JsonValue union and is validated by migrateUserData below.
+            rawData = JSON.parse(nativeRaw) as JsonValue;
+          }
         }
       } catch (err) {
-        log.warn('Native Preferences read failed', { err });
+        log.warn('Native Preferences read failed', { err: err instanceof Error ? err : String(err) });
       }
     }
 
@@ -221,10 +227,13 @@ class OfflineStorageService {
           const raw =
             localStorage.getItem(LOCALSTORAGE_KEY) ||
             localStorage.getItem(LEGACY_LOCALSTORAGE_KEY);
-          if (raw) rawData = JSON.parse(raw);
+          if (raw) {
+            // SAFETY: JSON.parse output conforms to JsonValue and is validated by migrateUserData below.
+            rawData = JSON.parse(raw) as JsonValue;
+          }
         }
       } catch (e) {
-        log.warn('LocalStorage parse failed', { err: e });
+        log.warn('LocalStorage parse failed', { err: e instanceof Error ? e : String(e) });
       }
     }
 
@@ -317,7 +326,7 @@ class OfflineStorageService {
         else queue.push(mutation);
         localStorage.setItem(SYNC_QUEUE_FALLBACK_KEY, JSON.stringify(queue));
       } catch (e) {
-        log.warn('Failed to persist mutation in LocalStorage fallback', { err: e });
+        log.warn('Failed to persist mutation in LocalStorage fallback', { err: e instanceof Error ? e : String(e) });
       }
     }
   }
@@ -372,12 +381,14 @@ class OfflineStorageService {
         const tx = db.transaction(SYNC_QUEUE_STORE, 'readonly');
         const store = tx.objectStore(SYNC_QUEUE_STORE);
         const req = store.getAll();
+        // SAFETY: SYNC_QUEUE_STORE exclusively stores PendingSyncMutation records written via putMutation().
         req.onsuccess = () => resolve((req.result as PendingSyncMutation[]) || []);
         req.onerror = () => reject(req.error);
       });
     } catch {
       try {
         const rawQueue = localStorage.getItem(SYNC_QUEUE_FALLBACK_KEY) || '[]';
+        // SAFETY: SYNC_QUEUE_FALLBACK_KEY exclusively stores serialized PendingSyncMutation[] arrays.
         return JSON.parse(rawQueue) as PendingSyncMutation[];
       } catch {
         return [];
@@ -401,11 +412,12 @@ class OfflineStorageService {
     } catch {
       try {
         const rawQueue = localStorage.getItem(SYNC_QUEUE_FALLBACK_KEY) || '[]';
-        const queue: PendingSyncMutation[] = JSON.parse(rawQueue);
+        // SAFETY: SYNC_QUEUE_FALLBACK_KEY exclusively stores serialized PendingSyncMutation[] arrays.
+        const queue = JSON.parse(rawQueue) as PendingSyncMutation[];
         const filtered = queue.filter((m) => m.id !== id);
         localStorage.setItem(SYNC_QUEUE_FALLBACK_KEY, JSON.stringify(filtered));
       } catch (e) {
-        log.warn('Failed to remove mutation from LocalStorage', { err: e });
+        log.warn('Failed to remove mutation from LocalStorage', { err: e instanceof Error ? e : String(e) });
       }
     }
   }

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { alphabet } from '../data/kurmanji';
 import { Modal, Button } from '../components/ui';
 import TracingCanvas, { type TracingCanvasHandle } from '../components/TracingCanvas';
@@ -26,6 +26,7 @@ import {
 } from '../lib/pathValidation';
 import { recordReview, type ReviewDeck } from '../services/SpacedRepetitionService';
 import { Eraser, RotateCcw, CheckCircle2, XCircle, ChevronRight, Eye } from 'lucide-react';
+import { pickLocalized } from '../localization/translations';
 
 /** Single-glyph tracing target burned into the offscreen mask. */
 const TOP_LETTER = (letterApi: { id: string; char: string }) =>
@@ -165,17 +166,14 @@ export function WritingTracingPage() {
     goToLetter(next.id);
   }, [goToLetter, letter.id]);
 
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
+  const clearLabel = pickLocalized(language, { ku: 'Paqij bike', ar: 'مسح الكل', en: 'Clear' });
+  const undoLabel = pickLocalized(language, { ku: 'Vegere', ar: 'تراجع', en: 'Undo' });
+  const checkLabel = pickLocalized(language, { ku: 'Kontrol', ar: 'تحقق', en: 'Check' });
+  const nextLabel = pickLocalized(language, { ku: 'Ya din', ar: 'التالي', en: 'Next' });
+  const watchLabel = pickLocalized(language, { ku: 'Binêre', ar: 'شاهد', en: 'Watch how' });
 
-  const clearLabel = isKu ? 'Paqij bike' : isAr ? 'مسح الكل' : 'Clear';
-  const undoLabel = isKu ? 'Vegere' : isAr ? 'تراجع' : 'Undo';
-  const checkLabel = isKu ? 'Kontrol' : isAr ? 'تحقق' : 'Check';
-  const nextLabel = isKu ? 'Ya din' : isAr ? 'التالي' : 'Next';
-  const watchLabel = isKu ? 'Binêre' : isAr ? 'شاهد' : 'Watch how';
-
-  const failTitle = isKu ? 'Dîsa biceribîne ❌' : isAr ? 'حاول مرة أخرى ❌' : 'Try again ❌';
-  const passTitle = isKu ? 'Baş e! ✅' : isAr ? 'أحسنت! ✅' : 'Well done! ✅';
+  const failTitle = pickLocalized(language, { ku: 'Dîsa biceribîne ❌', ar: 'حاول مرة أخرى ❌', en: 'Try again ❌' });
+  const passTitle = pickLocalized(language, { ku: 'Baş e! ✅', ar: 'أحسنت! ✅', en: 'Well done! ✅' });
 
   const percentText = (fraction: number) => `${Math.round(fraction * 100)}%`;
 
@@ -185,47 +183,47 @@ export function WritingTracingPage() {
     if (!pathResult || pathResult.passed) return null;
     switch (pathResult.reason) {
       case 'empty':
-        return isKu
-          ? 'Tiştek nexşandî. Ji kerema xwe her tîp bi rêz bikişîne.'
-          : isAr
-            ? 'لم ترسم شيئاً بعد. ارسم الحرف بضربات مرتبة.'
-            : 'Nothing drawn yet. Trace the letter stroke by stroke.';
+        return pickLocalized(language, {
+          ku: 'Tiştek nexşandî. Ji kerema xwe her tîp bi rêz bikişîne.',
+          ar: 'لم ترسم شيئاً بعد. ارسم الحرف بضربات مرتبة.',
+          en: 'Nothing drawn yet. Trace the letter stroke by stroke.',
+        });
       case 'stroke-count':
-        return isKu
-          ? `Vê tîpê ${pathResult.expectedCount} xet hene — te ${pathResult.strokeCount} xet kişand.`
-          : isAr
-            ? `هذا الحرف يتكون من ${pathResult.expectedCount} حركات وأنت رسمت ${pathResult.strokeCount}.`
-            : `This letter has ${pathResult.expectedCount} strokes — you drew ${pathResult.strokeCount}.`;
+        return pickLocalized(language, {
+          ku: `Vê tîpê ${pathResult.expectedCount} xet hene — te ${pathResult.strokeCount} xet kişand.`,
+          ar: `هذا الحرف يتكون من ${pathResult.expectedCount} حركات وأنت رسمت ${pathResult.strokeCount}.`,
+          en: `This letter has ${pathResult.expectedCount} strokes — you drew ${pathResult.strokeCount}.`,
+        });
       case 'order':
-        return isKu
-          ? 'Rêza xetan xelet e. Li "Binêre" temaşe bike û dîsa biceribîne.'
-          : isAr
-            ? 'ترتيب الحركات خاطئ. شاهد "شاهد" ثم حاول مجدداً.'
-            : 'Strokes drawn in the wrong order. Watch the demo and try again.';
+        return pickLocalized(language, {
+          ku: 'Rêza xetan xelet e. Li "Binêre" temaşe bike û dîsa biceribîne.',
+          ar: 'ترتيب الحركات خاطئ. شاهد "شاهد" ثم حاول مجدداً.',
+          en: 'Strokes drawn in the wrong order. Watch the demo and try again.',
+        });
       case 'direction':
-        return isKu
-          ? 'Berê xetê berevajî ye. Ji cihê destpêkê dest pê bike.'
-          : isAr
-            ? 'اتجاه الحركة معكوس. ابدأ من نقطة البداية.'
-            : 'A stroke was drawn the wrong way. Start from the starting point.';
+        return pickLocalized(language, {
+          ku: 'Berê xetê berevajî ye. Ji cihê destpêkê dest pê bike.',
+          ar: 'اتجاه الحركة معكوس. ابدأ من نقطة البداية.',
+          en: 'A stroke was drawn the wrong way. Start from the starting point.',
+        });
       case 'shape':
-        return isKu
-          ? 'Şikl ji rê derket. Deverên sor li ser rêya zêrîn bikişîne.'
-          : isAr
-            ? 'انحرفت عن المسار. ارسم فوق المناطق الحمراء على طول المسار الذهبي.'
-            : 'A stroke drifted off the path. Trace the red parts along the gold guide.';
+        return pickLocalized(language, {
+          ku: 'Şikl ji rê derket. Deverên sor li ser rêya zêrîn bikişîne.',
+          ar: 'انحرفت عن المسار. ارسم فوق المناطق الحمراء على طول المسار الذهبي.',
+          en: 'A stroke drifted off the path. Trace the red parts along the gold guide.',
+        });
       case 'connection':
-        return isKu
-          ? 'Xet li hev nayên girêdan — ji kerema xwe serê xetan bigihîne hev.'
-          : isAr
-            ? 'الحركات غير متصلة — صل أطراف الحركات ببعضها.'
-            : 'Strokes are not connected — join the stroke ends together.';
+        return pickLocalized(language, {
+          ku: 'Xet li hev nayên girêdan — ji kerema xwe serê xetan bigihîne hev.',
+          ar: 'الحركات غير متصلة — صل أطراف الحركات ببعضها.',
+          en: 'Strokes are not connected — join the stroke ends together.',
+        });
       case 'coverage':
-        return isKu
-          ? 'Beşek ji tîpê kêm e. Deverên sor temam bike.'
-          : isAr
-            ? 'جزء من الحرف ناقص. أكمل المناطق الحمراء.'
-            : 'Part of the letter is missing. Complete the red areas.';
+        return pickLocalized(language, {
+          ku: 'Beşek ji tîpê kêm e. Deverên sor temam bike.',
+          ar: 'جزء من الحرف ناقص. أكمل المناطق الحمراء.',
+          en: 'Part of the letter is missing. Complete the red areas.',
+        });
       default:
         return null;
     }
@@ -239,11 +237,11 @@ export function WritingTracingPage() {
           <h2 className="text-xl font-black text-ink leading-none">
             <span dir="ltr" className="font-mono">{glyph}</span>
             <span className="text-sm font-black text-muted ms-2">
-              {isKu ? 'Binivîse' : isAr ? 'اكتب الحرف' : 'Write the letter'}
+              {pickLocalized(language, { ku: 'Binivîse', ar: 'اكتب الحرف', en: 'Write the letter' })}
             </span>
           </h2>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1.5">
-            {isKu ? 'Bi tiliya xwe bikşîne' : isAr ? 'تتبّع بإصبعك' : 'Trace with your finger'}
+            {pickLocalized(language, { ku: 'Bi tiliya xwe bikşîne', ar: 'تتبّع بإصبعك', en: 'Trace with your finger' })}
           </p>
         </div>
         <button
@@ -251,7 +249,7 @@ export function WritingTracingPage() {
           onClick={() => navigate('/writing')}
           className="text-[10px] font-black text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 uppercase tracking-wider cursor-pointer bg-transparent border-none min-h-[44px] px-2"
         >
-          {isKu ? 'Vegere tomaran' : isAr ? 'إلى الحروف' : 'All letters'}
+          {pickLocalized(language, { ku: 'Vegere tomaran', ar: 'إلى الحروف', en: 'All letters' })}
         </button>
       </div>
 
@@ -332,7 +330,7 @@ export function WritingTracingPage() {
           pathResult ? (
             <div className="flex flex-col gap-3">
               <div className="flex justify-between text-xs font-bold text-muted">
-                <span>{isKu ? 'Xet' : isAr ? 'الحركات' : 'Strokes'}</span>
+                <span>{pickLocalized(language, { ku: 'Xet', ar: 'الحركات', en: 'Strokes' })}</span>
                 <span className="tabular-nums" dir="ltr">
                   {pathResult.strokeCount}/{pathResult.expectedCount}
                 </span>
@@ -348,7 +346,7 @@ export function WritingTracingPage() {
                 </Button>
               ) : (
                 <Button variant="danger" fullWidth onClick={handleRetry} leadingIcon={<XCircle className="w-4 h-4" />}>
-                  {isKu ? 'Dîsa biceribîne' : isAr ? 'إعادة المحاولة' : 'Retry'}
+                  {pickLocalized(language, { ku: 'Dîsa biceribîne', ar: 'إعادة المحاولة', en: 'Retry' })}
                 </Button>
               )}
             </div>
@@ -357,31 +355,31 @@ export function WritingTracingPage() {
           <div className="flex flex-col gap-3">
             <div className="text-xs font-bold text-muted space-y-1">
               <div className="flex justify-between">
-                <span>{isKu ? 'Dagirtin' : isAr ? 'التغطية' : 'Coverage'}</span>
+                <span>{pickLocalized(language, { ku: 'Dagirtin', ar: 'التغطية', en: 'Coverage' })}</span>
                 <span className="tabular-nums" dir="ltr">{percentText(result.coverage)}</span>
               </div>
               <div className="flex justify-between">
-                <span>{isKu ? 'Derveyî rê' : isAr ? 'خارج المسار' : 'Outside'}</span>
+                <span>{pickLocalized(language, { ku: 'Derveyî rê', ar: 'خارج المسار', en: 'Outside' })}</span>
                 <span className="tabular-nums" dir="ltr">{percentText(result.outOfBounds)}</span>
               </div>
             </div>
 
             {!result.passed && (
               <p className="text-[11px] font-semibold text-muted leading-relaxed">
-                {isKu
-                  ? `Rêjeya te %${Math.round(result.coverage * 100)} e. Ji kerema xwe temam bike.`
-                  : isAr
-                    ? `نسبتك ${Math.round(result.coverage * 100)}٪. يرجى إكمالها.`
-                    : `Your coverage is ${Math.round(result.coverage * 100)}%. Please complete it.`}
+                {pickLocalized(language, {
+                  ku: `Rêjeya te %${Math.round(result.coverage * 100)} e. Ji kerema xwe temam bike.`,
+                  ar: `نسبتك ${Math.round(result.coverage * 100)}٪. يرجى إكمالها.`,
+                  en: `Your coverage is ${Math.round(result.coverage * 100)}%. Please complete it.`,
+                })}
               </p>
             )}
 
             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-              {isKu
-                ? `divê dagirtin ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, her herêm ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, derveyî ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`
-                : isAr
-                  ? `التغطية ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}٪، كل منطقة ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}٪، خارج المسار ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}٪ (±${COVERAGE_TOLERANCE_PX} بكسل)`
-                  : `coverage ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, each zone ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, outside ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}% (±${COVERAGE_TOLERANCE_PX}px tolerance)`}
+              {pickLocalized(language, {
+                ku: `divê dagirtin ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, her herêm ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, derveyî ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`,
+                ar: `التغطية ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}٪، كل منطقة ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}٪، خارج المسار ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}٪ (±${COVERAGE_TOLERANCE_PX} بكسل)`,
+                en: `coverage ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, each zone ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, outside ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}% (±${COVERAGE_TOLERANCE_PX}px tolerance)`,
+              })}
             </p>
 
             {result.passed ? (
@@ -390,7 +388,7 @@ export function WritingTracingPage() {
               </Button>
             ) : (
               <Button variant="danger" fullWidth onClick={handleRetry} leadingIcon={<XCircle className="w-4 h-4" />}>
-                {isKu ? 'Dîsa biceribîne' : isAr ? 'إعادة المحاولة' : 'Retry'}
+                {pickLocalized(language, { ku: 'Dîsa biceribîne', ar: 'إعادة المحاولة', en: 'Retry' })}
               </Button>
             )}
           </div>

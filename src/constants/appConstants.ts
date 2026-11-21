@@ -19,13 +19,3 @@ export const AVATARS = [
   { id: 'av-8', icon: 'award', color: 'bg-yellow-100 text-yellow-600' }
 ];
 
-export const KURDISH_REGIONS = [
-  { id: '', labelEn: 'Prefer not to say', labelAr: 'أفضل عدم القول' },
-  { id: 'rojava', labelEn: 'Rojava', labelAr: 'روج آفا' },
-  { id: 'bashur', labelEn: 'Başûr', labelAr: 'باشور' },
-  { id: 'bakur', labelEn: 'Bakur', labelAr: 'باكور' },
-  { id: 'rojhilat', labelEn: 'Rojhilat', labelAr: 'روجهلات' },
-  { id: 'diaspora', labelEn: 'Diaspora', labelAr: 'المهجر' },
-  { id: 'other', labelEn: 'Other', labelAr: 'أخرى' }
-];
-

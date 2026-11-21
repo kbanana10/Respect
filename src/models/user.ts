@@ -1,8 +1,8 @@
 /**
  * user.ts
- * 
- * Central domain models representing Users, Profile Settings, and Learning Progression.
- * Decoupled from framework state managers like React Context, and matches typical MVVM entities.
+ *
+ * Central domain models representing Users, Profile Settings, Adaptive Learner Mode
+ * (Kids 5-12 vs Adults 13+), Rewards, and Learning Progression.
  */
 
 import type { ReviewDeck } from '../services/SpacedRepetitionService';
@@ -16,13 +16,22 @@ export interface User {
 
 export type Language = 'en' | 'ar' | 'ku';
 
+export type LearnerMode = 'kids' | 'adults';
+
+export type ThemeAccent = 'gold' | 'emerald' | 'sky' | 'rose';
+
 /** Named owner contract: per-game best scores keyed by game id. */
 export interface GameScoreMap {
   [gameId: string]: number;
 }
 
+/** Named owner contract: per-letter writing lesson progress keyed by UPPERCASE glyph. */
+export interface WritingProgressMap {
+  [letter: string]: WritingLetterProgress;
+}
+
 export interface UserData {
-  /** Monotonic schema version for lossless storage migrations (current: 3). */
+  /** Monotonic schema version for lossless storage migrations (current: 4). */
   schemaVersion?: number;
   xp: number;
   level: number;
@@ -39,7 +48,19 @@ export interface UserData {
   region?: string;
   kurdishRegion?: string;
   quizzesCompleted?: number;
-  
+
+  // Adaptive Learner Mode & Accessibility Preferences (Schema v4)
+  learnerMode?: LearnerMode;
+  autoPlayAudio?: boolean;
+  soundEnabled?: boolean;
+  relaxedTimer?: boolean;
+  parentalGateEnabled?: boolean;
+
+  // Offline Rewards Shop & Personalization (Schema v4)
+  unlockedAvatars?: string[];
+  unlockedStickers?: string[];
+  activeAccent?: ThemeAccent;
+
   // Onboarding & Customization Preferences
   isOnboarded?: boolean;
   onboardingReason?: string;
@@ -51,9 +72,9 @@ export interface UserData {
   /** XP earned today (rolls over at UTC midnight via xpTodayDate). */
   xpToday?: number;
   xpTodayDate?: string;
-  
+
   // Evolved gamification systems
-  gems?: number; // Quester Gems currency
+  gems?: number; // Quester Gems / Coins currency
   streakFreezes?: number; // Available streak freeze shields
   /** Daily missions tracking (UTC day): activity counters + claimed reward ids. */
   missionsState?: {
@@ -64,9 +85,9 @@ export interface UserData {
   lastStreakFreezeUsed?: string; // YYYY-MM-DD UTC when freeze was last consumed
   lastActiveDate?: string; // YYYY-MM-DD UTC date string
   completedLessons?: string[]; // list of completed lesson IDs
-  unlockedLevels?: string[]; // list of unlocked CEFR levels ('A1', 'A2', etc.)
+  unlockedLevels?: string[]; // list of unlocked CEFR levels ('U0', 'A1', 'A2', 'B1', 'B2', 'Advanced')
   badges?: string[]; // list of unlocked achievement IDs
-  gameScores?: Record<string, number>; // game_id -> high score
+  gameScores?: GameScoreMap; // game_id -> high score
   wrongAnswersHistory?: string[]; // word/sentence ids the user got wrong for review
   reviewDeck?: ReviewDeck; // SM-2 Spaced Repetition deck
   weakCategories?: Record<string, number>; // categoryId -> mistakeCount
@@ -80,7 +101,7 @@ export interface UserData {
    * Interactive Letter Writing Lesson progress, keyed by UPPERCASE glyph.
    * Persisted only as per-letter aggregates — never pointer/ink data.
    */
-  writingProgress?: Record<string, WritingLetterProgress>;
+  writingProgress?: WritingProgressMap;
 }
 
 /** Per-letter stats for the Interactive Letter Writing Lesson. */

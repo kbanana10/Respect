@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { academicVocabulary, AcademicLevel } from '../data/academic';
 import { vocabulary } from '../data/kurmanji';
-import { AudioButton } from '../components/AudioButton';
+import { AudioButton } from '../features/audio/components/AudioButton';
 import { Heart, Search } from 'lucide-react';
-import { t, tLevel } from '../lib/translations';
+import { t, tLevel, pickLocalized } from '../localization/translations';
 
 export function Favorites() {
   const navigate = useNavigate();
@@ -75,9 +75,9 @@ export function Favorites() {
                    </span>
                  </div>
                  <div className="flex gap-2 text-xs font-semibold mt-1">
-                   <span className={`${language === 'en' || language === 'ku' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}><bdi>{word?.en || ''}</bdi></span>
+                   <span className={pickLocalized(language, { en: 'text-rose-600 dark:text-rose-400', ar: 'text-slate-500 dark:text-slate-400', ku: 'text-rose-600 dark:text-rose-400' })}><bdi>{word?.en || ''}</bdi></span>
                    <span className="text-slate-300 dark:text-slate-700">•</span>
-                   <span className={`${language === 'ar' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400'}`}><bdi>{word?.ar || ''}</bdi></span>
+                   <span className={pickLocalized(language, { en: 'text-slate-500 dark:text-slate-400', ar: 'text-rose-600 dark:text-rose-400', ku: 'text-slate-500 dark:text-slate-400' })}><bdi>{word?.ar || ''}</bdi></span>
                  </div>
                </div>
              </div>
@@ -85,7 +85,7 @@ export function Favorites() {
              {('exampleKu' in word) && word.exampleKu && (
                <div className="bg-slate-50/75 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-200 dark:border-slate-800 text-xs text-start">
                  <p className="text-left font-extrabold text-slate-800 dark:text-slate-200 mb-1" dir="ltr">"{word.exampleKu}"</p>
-                 <p className="text-slate-500 dark:text-slate-400 font-medium"><bdi>{language === 'ar' ? word.exampleAr : word.exampleEn}</bdi></p>
+                 <p className="text-slate-500 dark:text-slate-400 font-medium"><bdi>{pickLocalized(language, { en: word.exampleEn || '', ar: word.exampleAr || '', ku: word.exampleEn || '' })}</bdi></p>
                </div>
              )}
 
@@ -111,18 +111,18 @@ export function Favorites() {
             <div className="space-y-1">
               <h3 className="font-bold text-lg text-slate-800 dark:text-white">{t(language, 'no_results')}</h3>
               <p className="text-slate-500 dark:text-slate-400">
-                {language === 'ku'
-                  ? 'Kategoriyên peyvan bigere û peyvên akademîk yan giştî li bijareyên xwe zêde bike!'
-                  : language === 'ar'
-                  ? 'تصفح تصنيفات المفردات وأضف المصطلحات إلى مفضلتك الشخصية!'
-                  : 'Go explore vocabulary categories and add standard or academic items to your favorites!'}
+                {pickLocalized(language, {
+                  en: 'Go explore vocabulary categories and add standard or academic items to your favorites!',
+                  ar: 'تصفح تصنيفات المفردات وأضف المصطلحات إلى مفضلتك الشخصية!',
+                  ku: 'Kategoriyên peyvan bigere û peyvên akademîk yan giştî li bijareyên xwe zêde bike!',
+                })}
               </p>
             </div>
             <button
                onClick={() => navigate('/vocabulary')}
                className="mt-4 bg-rose-100 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 font-bold px-6 py-3 rounded-2xl hover:bg-rose-200 transition-colors border-none cursor-pointer"
             >
-              {language === 'ku' ? 'Peyvan Bibîne' : language === 'ar' ? 'استعراض المفردات' : 'Browse Vocabulary'}
+              {pickLocalized(language, { en: 'Browse Vocabulary', ar: 'استعراض المفردات', ku: 'Peyvan Bibîne' })}
             </button>
           </div>
         )}

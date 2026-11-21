@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { WRITING_WORDS } from '../data/writingWords';
 import { Modal, Button } from '../components/ui';
 import TracingCanvas, { type TracingCanvasHandle } from '../components/TracingCanvas';
@@ -18,6 +18,7 @@ import {
 } from '../lib/traceLetters';
 import { recordReview, type ReviewDeck } from '../services/SpacedRepetitionService';
 import { Eraser, RotateCcw, CheckCircle2, XCircle, ChevronRight, Check } from 'lucide-react';
+import { pickLocalized } from '../localization/translations';
 
 /**
  * Word-tracing (whole-word) layout: the full word is shown faintly in the
@@ -176,24 +177,21 @@ export function WritingWordTracingPage() {
     navigate(`/writing/words/${next.id}`, { replace: true });
   }, [navigate, word.id]);
 
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
+  const clearLabel = pickLocalized(language, { ku: 'Paqij bike', ar: 'مسح الكل', en: 'Clear' });
+  const undoLabel = pickLocalized(language, { ku: 'Vegere', ar: 'تراجع', en: 'Undo' });
+  const checkLabel = pickLocalized(language, { ku: 'Kontrol', ar: 'تحقق', en: 'Check' });
+  const nextWordLabel = pickLocalized(language, { ku: 'Peyva din', ar: 'كلمة تالية', en: 'Next word' });
+  const keepDrawingLabel = pickLocalized(language, { ku: 'Temam bike', ar: 'أكمل', en: 'Keep drawing' });
 
-  const clearLabel = isKu ? 'Paqij bike' : isAr ? 'مسح الكل' : 'Clear';
-  const undoLabel = isKu ? 'Vegere' : isAr ? 'تراجع' : 'Undo';
-  const checkLabel = isKu ? 'Kontrol' : isAr ? 'تحقق' : 'Check';
-  const nextWordLabel = isKu ? 'Peyva din' : isAr ? 'كلمة تالية' : 'Next word';
-  const keepDrawingLabel = isKu ? 'Temam bike' : isAr ? 'أكمل' : 'Keep drawing';
-
-  const failTitle = isKu ? 'Dîsa biceribîne ❌' : isAr ? 'حاول مرة أخرى ❌' : 'Try again ❌';
-  const wordPassTitle = isKu ? 'Baş e! Peyv temam ✅' : isAr ? 'أحسنت! اكتملت الكلمة ✅' : 'Well done! Word complete ✅';
+  const failTitle = pickLocalized(language, { ku: 'Dîsa biceribîne ❌', ar: 'حاول مرة أخرى ❌', en: 'Try again ❌' });
+  const wordPassTitle = pickLocalized(language, { ku: 'Baş e! Peyv temam ✅', ar: 'أحسنت! اكتملت الكلمة ✅', en: 'Well done! Word complete ✅' });
 
   const percentText = (fraction: number) => `${Math.round(fraction * 100)}%`;
-  const thresholdText = isKu
-    ? `divê dagirtin ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, her herêm ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, derveyî ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`
-    : isAr
-      ? `التغطية ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}٪، كل منطقة ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}٪، خارج المسار ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}٪`
-      : `coverage ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, each zone ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, outside ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`;
+  const thresholdText = pickLocalized(language, {
+    ku: `divê dagirtin ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, her herêm ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, derveyî ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`,
+    ar: `التغطية ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}٪، كل منطقة ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}٪، خارج المسار ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}٪`,
+    en: `coverage ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, each zone ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, outside ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`,
+  });
 
   return (
     <div className="p-4 flex flex-col min-h-screen pb-24">
@@ -203,15 +201,15 @@ export function WritingWordTracingPage() {
           <h2 className="text-xl font-black text-ink leading-none">
             <span dir="ltr" className="font-mono">{word.ku}</span>
             <span className="text-sm font-black text-muted ms-2">
-              {isAr ? word.ar : word.en}
+              {pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en })}
             </span>
           </h2>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1.5">
-            {isKu
-              ? 'Hemû tîpan bikşîne, paşê Kontrol bike'
-              : isAr
-                ? 'ارسم كل الحروف ثم اضغط تحقق'
-                : 'Draw the whole word, then tap Check'}
+            {pickLocalized(language, {
+              ku: 'Hemû tîpan bikşîne, paşê Kontrol bike',
+              ar: 'ارسم كل الحروف ثم اضغط تحقق',
+              en: 'Draw the whole word, then tap Check',
+            })}
           </p>
         </div>
         <button
@@ -219,12 +217,15 @@ export function WritingWordTracingPage() {
           onClick={() => navigate('/writing/words')}
           className="text-[10px] font-black text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 uppercase tracking-wider cursor-pointer bg-transparent border-none min-h-[44px] px-2"
         >
-          {isKu ? 'Hemû peyv' : isAr ? 'كل الكلمات' : 'All words'}
+          {pickLocalized(language, { ku: 'Hemû peyv', ar: 'كل الكلمات', en: 'All words' })}
         </button>
       </div>
 
       {/* Per-letter status chips — show post-check state (✅ / ❌ / ⏳) */}
-      <div className="flex items-center justify-center gap-1.5 mb-3" aria-label={isAr ? 'حالة الحروف' : 'Letter status'}>
+      <div
+        className="flex items-center justify-center gap-1.5 mb-3"
+        aria-label={pickLocalized(language, { ku: 'Rewşa tîpan', ar: 'حالة الحروف', en: 'Letter status' })}
+      >
         {glyphs.map((g, i) => (
           <span
             key={`${word.id}-${i}`}
@@ -305,7 +306,10 @@ export function WritingWordTracingPage() {
         hideCloseButton
       >
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-1.5 justify-center" aria-label={isAr ? 'نتيجة كل حرف' : 'Per-letter result'}>
+          <div
+            className="flex flex-wrap gap-1.5 justify-center"
+            aria-label={pickLocalized(language, { ku: 'Encama her tîpê', ar: 'نتيجة كل حرف', en: 'Per-letter result' })}
+          >
             {glyphs.map((g, i) => (
               <span
                 key={g + String(i)}
@@ -324,11 +328,11 @@ export function WritingWordTracingPage() {
 
           {!allPassed && (
             <p className="text-[11px] font-semibold text-muted leading-relaxed text-center">
-              {isKu
-                ? `${count - passedCount} tîp hîn ne temam e. Deverên sor temam bike û dîsa Kontrol bike.`
-                : isAr
-                  ? `بقي ${count - passedCount} حروف غير مكتملة. أكمل المناطق الحمراء ثم اضغط تحقق مرة أخرى.`
-                  : `${count - passedCount} letter${count - passedCount === 1 ? '' : 's'} still need work. Fill the red areas, then Check again.`}
+              {pickLocalized(language, {
+                ku: `${count - passedCount} tîp hîn ne temam e. Deverên sor temam bike û dîsa Kontrol bike.`,
+                ar: `بقي ${count - passedCount} حروف غير مكتملة. أكمل المناطق الحمراء ثم اضغط تحقق مرة أخرى.`,
+                en: `${count - passedCount} letter${count - passedCount === 1 ? '' : 's'} still need work. Fill the red areas, then Check again.`,
+              })}
             </p>
           )}
 

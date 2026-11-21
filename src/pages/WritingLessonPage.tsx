@@ -22,10 +22,10 @@
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { registerBackInterceptor } from '../lib/navigation';
 import { alphabet } from '../data/kurmanji';
-import { AudioButton } from '../components/AudioButton';
+import { AudioButton } from '../features/audio/components/AudioButton';
 import { Button, Modal, Progress } from '../components/ui';
 import LetterDemo from '../components/LetterDemo';
 import ScoreRing from '../components/ScoreRing';
@@ -63,7 +63,8 @@ import {
   ChevronLeft,
   Trophy,
 } from 'lucide-react';
-import type { WritingLetterProgress } from '../models/user';
+import type { Language, WritingLetterProgress } from '../models/user';
+import { pickLocalized } from '../localization/translations';
 
 type Stage = 'learn' | 'watch' | 'trace' | 'write' | 'result';
 
@@ -86,12 +87,12 @@ const XP_BY_BAND = {
   retry: 0,
 } satisfies Record<ScoreBand, number>;
 
-const bandLabels = (isKu: boolean, isAr: boolean) =>
+const bandLabels = (language: Language) =>
   ({
-    excellent: isKu ? 'Pir baş! 🌟' : isAr ? 'ممتاز! 🌟' : 'Excellent! 🌟',
-    good: isKu ? 'Baş e! 👍' : isAr ? 'جيد! 👍' : 'Good! 👍',
-    practice: isKu ? 'Berdewam be 💪' : isAr ? 'واصل التدريب 💪' : 'Keep practicing 💪',
-    retry: isKu ? 'Dîsa biceribîne 📝' : isAr ? 'حاول مجدداً 📝' : 'Retry 📝',
+    excellent: pickLocalized(language, { ku: 'Pir baş! 🌟', ar: 'ممتاز! 🌟', en: 'Excellent! 🌟' }),
+    good: pickLocalized(language, { ku: 'Baş e! 👍', ar: 'جيد! 👍', en: 'Good! 👍' }),
+    practice: pickLocalized(language, { ku: 'Berdewam be 💪', ar: 'واصل التدريب 💪', en: 'Keep practicing 💪' }),
+    retry: pickLocalized(language, { ku: 'Dîsa biceribîne 📝', ar: 'حاول مجدداً 📝', en: 'Retry 📝' }),
   }) satisfies Record<ScoreBand, string>;
 
 export function WritingLessonPage() {
@@ -101,9 +102,6 @@ export function WritingLessonPage() {
 
   const letter = alphabet.find((l) => l.id === letterId) || alphabet[0];
   const glyph = letter.char.split(' ')[0].toUpperCase();
-
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
 
   const canvasRef = useRef<WritingLessonCanvasHandle>(null);
   const [stage, setStage] = useState<Stage>('learn');
@@ -294,16 +292,16 @@ export function WritingLessonPage() {
         canvasRef.current?.showDeviation([ink]);
         setTraceFeedback(
           ev.startedOnDot
-            ? (isKu
-                ? 'Hinekî ji rê derket. Dîsa biceribîne.'
-                : isAr
-                  ? 'انحرفت قليلاً عن المسار. حاول مجدداً.'
-                  : 'A little off the path. Try this stroke again.')
-            : (isKu
-                ? 'Ji cihê kesk dest pê bike.'
-                : isAr
-                  ? 'ابدأ من النقطة الخضراء.'
-                  : 'Start from the green start dot.'),
+            ? pickLocalized(language, {
+                ku: 'Hinekî ji rê derket. Dîsa biceribîne.',
+                ar: 'انحرفت قليلاً عن المسار. حاول مجدداً.',
+                en: 'A little off the path. Try this stroke again.',
+              })
+            : pickLocalized(language, {
+                ku: 'Ji cihê kesk dest pê bike.',
+                ar: 'ابدأ من النقطة الخضراء.',
+                en: 'Start from the green start dot.',
+              }),
         );
         // Optional light haptic on a miss (best-effort, never blocking).
         try {
@@ -313,7 +311,7 @@ export function WritingLessonPage() {
         }
       }
     },
-    [activeStroke, totalStrokes, isKu, isAr],
+    [activeStroke, totalStrokes, language],
   );
 
   // FREE MODE: check → deterministic 0..100 via the pixel engine.
@@ -403,38 +401,38 @@ export function WritingLessonPage() {
 
   // ---- localised strings ---------------------------------------------------
   const t = {
-    stageLearn: isKu ? 'Fêr bibe' : isAr ? 'تعلّم' : 'Learn',
-    stageWatch: isKu ? 'Temaşe bike' : isAr ? 'شاهد' : 'Watch',
-    stageTrace: isKu ? 'Bişopîne' : isAr ? 'تتبّع' : 'Trace',
-    stageWrite: isKu ? 'Binivîse' : isAr ? 'اكتب' : 'Write',
-    back: isKu ? 'Vegere tîpan' : isAr ? 'إلى الحروف' : 'All letters',
-    speak: isKu ? 'Bibihîze' : isAr ? 'استمع' : 'Listen',
-    watchNext: isKu ? 'Niha binivîse' : isAr ? 'ابدأ التتبع الآن' : 'Now trace it',
-    replay: isKu ? 'Dîsa lê binêre' : isAr ? 'إعادة المشاهدة' : 'Replay',
-    continue: isKu ? 'Bidomîne' : isAr ? 'متابعة' : 'Continue',
-    clear: isKu ? 'Paqij bike' : isAr ? 'مسح' : 'Clear',
-    undo: isKu ? 'Vegere' : isAr ? 'تراجع' : 'Undo',
-    check: isKu ? 'Kontrol' : isAr ? 'تحقق' : 'Check',
-    skipWrite: isKu ? 'Ji bo nivîsînê amade ye' : isAr ? 'انتقل للكتابة' : 'Go write',
-    next: isKu ? 'Tîpa din' : isAr ? 'الحرف التالي' : 'Next letter',
-    traceTitle: isKu ? 'Bişopîne — xet dixet' : isAr ? 'تتبّع — حركة بحركة' : 'Trace stroke by stroke',
-    traceHint: isKu
-      ? 'Ji xala kesk dest pê bike û bigihîne xala zêrîn.'
-      : isAr
-        ? 'ابدأ من النقطة الخضراء وتوقف عند النقطة الذهبية.'
-        : 'Start at the green dot and stop at the gold dot.',
-    writeTitle: isKu ? 'Bê rêber binivîse' : isAr ? 'اكتب بدون توجيه' : 'Write it freely',
-    writeHint: isKu
-      ? 'Niha bê xêzên arîkar binivîse.'
-      : isAr
-        ? 'اكتب الآن بدون الخطوط الإرشادية.'
-        : 'Now write it without the guide lines.',
-    noGuideNotice: isKu
-      ? 'Daneyên vê tîpê hê ne amade ne — em li ser dixebitin.'
-      : isAr
-        ? 'بيانات هذا الحرف غير جاهزة بعد — نعمل عليها.'
-        : 'Stroke data for this letter is still being verified — coming soon.',
-    tryAgain: isKu ? 'Dîsa biceribîne' : isAr ? 'حاول مجدداً' : 'Try again',
+    stageLearn: pickLocalized(language, { ku: 'Fêr bibe', ar: 'تعلّم', en: 'Learn' }),
+    stageWatch: pickLocalized(language, { ku: 'Temaşe bike', ar: 'شاهد', en: 'Watch' }),
+    stageTrace: pickLocalized(language, { ku: 'Bişopîne', ar: 'تتبّع', en: 'Trace' }),
+    stageWrite: pickLocalized(language, { ku: 'Binivîse', ar: 'اكتب', en: 'Write' }),
+    back: pickLocalized(language, { ku: 'Vegere tîpan', ar: 'إلى الحروف', en: 'All letters' }),
+    speak: pickLocalized(language, { ku: 'Bibihîze', ar: 'استمع', en: 'Listen' }),
+    watchNext: pickLocalized(language, { ku: 'Niha binivîse', ar: 'ابدأ التتبع الآن', en: 'Now trace it' }),
+    replay: pickLocalized(language, { ku: 'Dîsa lê binêre', ar: 'إعادة المشاهدة', en: 'Replay' }),
+    continue: pickLocalized(language, { ku: 'Bidomîne', ar: 'متابعة', en: 'Continue' }),
+    clear: pickLocalized(language, { ku: 'Paqij bike', ar: 'مسح', en: 'Clear' }),
+    undo: pickLocalized(language, { ku: 'Vegere', ar: 'تراجع', en: 'Undo' }),
+    check: pickLocalized(language, { ku: 'Kontrol', ar: 'تحقق', en: 'Check' }),
+    skipWrite: pickLocalized(language, { ku: 'Ji bo nivîsînê amade ye', ar: 'انتقل للكتابة', en: 'Go write' }),
+    next: pickLocalized(language, { ku: 'Tîpa din', ar: 'الحرف التالي', en: 'Next letter' }),
+    traceTitle: pickLocalized(language, { ku: 'Bişopîne — xet dixet', ar: 'تتبّع — حركة بحركة', en: 'Trace stroke by stroke' }),
+    traceHint: pickLocalized(language, {
+      ku: 'Ji xala kesk dest pê bike û bigihîne xala zêrîn.',
+      ar: 'ابدأ من النقطة الخضراء وتوقف عند النقطة الذهبية.',
+      en: 'Start at the green dot and stop at the gold dot.',
+    }),
+    writeTitle: pickLocalized(language, { ku: 'Bê rêber binivîse', ar: 'اكتب بدون توجيه', en: 'Write it freely' }),
+    writeHint: pickLocalized(language, {
+      ku: 'Niha bê xêzên arîkar binivîse.',
+      ar: 'اكتب الآن بدون الخطوط الإرشادية.',
+      en: 'Now write it without the guide lines.',
+    }),
+    noGuideNotice: pickLocalized(language, {
+      ku: 'Ji bo vê tîpê yekser nivîsandina azad bikar bîne.',
+      ar: 'انتقل مباشرةً للتدريب الحر على هذا الحرف.',
+      en: 'Jump straight into freehand writing practice for this letter.',
+    }),
+    tryAgain: pickLocalized(language, { ku: 'Dîsa biceribîne', ar: 'حاول مجدداً', en: 'Try again' }),
   };
 
   return (
@@ -452,7 +450,7 @@ export function WritingLessonPage() {
         <div className="flex items-center gap-2">
           {bestScore !== null && (
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-              {isKu ? 'Baştirîn: ' : isAr ? 'الأفضل: ' : 'Best: '}
+              {pickLocalized(language, { ku: 'Baştirîn: ', ar: 'الأفضل: ', en: 'Best: ' })}
               <span className="tabular-nums text-ink">{bestScore}</span>
             </span>
           )}
@@ -513,8 +511,8 @@ export function WritingLessonPage() {
             <div className="bg-[#FFF6E0] dark:bg-[#3A2F14] border border-[#FFB300]/30 p-4 rounded-2xl w-full max-w-xs">
               <p className="text-sm font-black text-ink" dir="ltr">{letter.exampleWord}</p>
               <p className="text-[11px] font-semibold text-muted mt-1">
-                {isKu ? 'Mînak:' : isAr ? 'مثال:' : 'Example:'}{' '}
-                {isKu ? letter.exampleWord : isAr ? letter.meaningAr : letter.meaningEn}
+                {pickLocalized(language, { ku: 'Mînak:', ar: 'مثال:', en: 'Example:' })}{' '}
+                {pickLocalized(language, { ku: letter.exampleWord, ar: letter.meaningAr, en: letter.meaningEn })}
               </p>
             </div>
             <div className="mt-4 w-full max-w-xs mx-auto">
@@ -531,7 +529,7 @@ export function WritingLessonPage() {
               {t.stageWatch}
             </Button>
             <Button variant="outline" size="md" fullWidth onClick={startTrace} leadingIcon={<Pencil className="w-4 h-4" />}>
-              {isKu ? 'Yekser bişopîne' : isAr ? 'ابدأ التتبع مباشرة' : 'Skip to tracing'}
+              {pickLocalized(language, { ku: 'Yekser bişopîne', ar: 'ابدأ التتبع مباشرة', en: 'Skip to tracing' })}
             </Button>
           </div>
         </div>
@@ -624,13 +622,13 @@ export function WritingLessonPage() {
       <Modal
         open={showResult && score !== null}
         onClose={() => setShowResult(false)}
-        title={bandLabels(isKu, isAr)[band]}
+        title={bandLabels(language)[band]}
         variant="center"
         hideCloseButton
       >
         {score !== null && (
           <div className="flex flex-col items-center gap-4">
-            <ScoreRing score={score} label={isKu ? 'Xal' : isAr ? 'النقاط' : 'Score'} />
+            <ScoreRing score={score} label={pickLocalized(language, { ku: 'Xal', ar: 'النقاط', en: 'Score' })} />
             {earnedXp > 0 && (
               <p className="flex items-center gap-1.5 text-sm font-black text-[#D97706] dark:text-[#FFCE6B]">
                 <Trophy className="w-4 h-4" />
@@ -639,12 +637,28 @@ export function WritingLessonPage() {
             )}
             <p className="text-[11px] font-semibold text-muted text-center leading-relaxed">
               {band === 'excellent'
-                ? (isKu ? 'Karekî hêja! Tu amade yî bo tîpa din.' : isAr ? 'عمل رائع! أنت جاهز للحرف التالي.' : 'Wonderful work! You are ready for the next letter.')
+                ? pickLocalized(language, {
+                    ku: 'Karekî hêja! Tu amade yî bo tîpa din.',
+                    ar: 'عمل رائع! أنت جاهز للحرف التالي.',
+                    en: 'Wonderful work! You are ready for the next letter.',
+                  })
                 : band === 'good'
-                  ? (isKu ? 'Baş e! Hinekî pratîk û tu dibî hoste.' : isAr ? 'جيد! القليل من التدريب وستتقنه.' : 'Good! A little more practice and you will master it.')
+                  ? pickLocalized(language, {
+                      ku: 'Baş e! Hinekî pratîk û tu dibî hoste.',
+                      ar: 'جيد! القليل من التدريب وستتقنه.',
+                      en: 'Good! A little more practice and you will master it.',
+                    })
                   : band === 'practice'
-                    ? (isKu ? 'Forma baş. Dîsa biceribîne da çêtir bibî.' : isAr ? 'شكل جيد. أعد المحاولة لتتحسن.' : 'Good form. Try again to improve.')
-                    : (isKu ? 'Hê zûtir tê. Dîsa biceribîne!' : isAr ? 'ستتقنه قريباً. حاول مجدداً!' : 'You are getting there. Give it another try!')}
+                    ? pickLocalized(language, {
+                        ku: 'Forma baş. Dîsa biceribîne da çêtir bibî.',
+                        ar: 'شكل جيد. أعد المحاولة لتتحسن.',
+                        en: 'Good form. Try again to improve.',
+                      })
+                    : pickLocalized(language, {
+                        ku: 'Hê zûtir tê. Dîsa biceribîne!',
+                        ar: 'ستتقنه قريباً. حاول مجدداً!',
+                        en: 'You are getting there. Give it another try!',
+                      })}
             </p>
             <div className="grid grid-cols-2 gap-3 w-full">
               <Button variant="secondary" size="md" onClick={resetAttempt} leadingIcon={<RotateCcw className="w-4 h-4" />} className="text-xs h-12">
@@ -660,5 +674,3 @@ export function WritingLessonPage() {
     </div>
   );
 }
-
-export default WritingLessonPage;

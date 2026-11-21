@@ -16,7 +16,8 @@
 import React, { useState } from 'react';
 import { Volume2, Turtle } from 'lucide-react';
 import { useAudio } from '../hooks/useAudio';
-import { useAuth } from '../../../lib/AuthContext';
+import { useAuth } from '../../../store/AuthContext';
+import { pickLocalized } from '../../../localization/translations';
 import { motion } from 'motion/react';
 
 interface AudioButtonProps {
@@ -38,9 +39,7 @@ interface AudioButtonProps {
 
 /** Localized "Slow" word for the in-button slow-mode label (no numbers). */
 function slowLabel(language: 'en' | 'ar' | 'ku'): string {
-  if (language === 'ar') return 'بطيء';
-  if (language === 'ku') return 'Hêdî';
-  return 'Slow';
+  return pickLocalized(language, { ar: 'بطيء', ku: 'Hêdî', en: 'Slow' });
 }
 
 export function AudioButton({ audioUrl, textToSpeak, className = '', iconClassName = 'w-6 h-6', showProgress = true, playbackRate, label }: AudioButtonProps) {

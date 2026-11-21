@@ -13,9 +13,9 @@ import {
   Backpack, Calculator, Library, Award, FileText, Layout, Code, Brain, Map as MapIcon, ChevronDown, ChevronUp,
   ChevronRight, Building2, School, FileSpreadsheet
 } from 'lucide-react';
-import { useAuth } from '../lib/AuthContext';
-import { t, tLevel } from '../lib/translations';
-import { AudioButton } from '../components/AudioButton';
+import { useAuth } from '../store/AuthContext';
+import { t, tLevel, pickLocalized } from '../localization/translations';
+import { AudioButton } from '../features/audio/components/AudioButton';
 import { RecallButton } from '../components/RecallButton';
 import { useFavorites } from '../hooks/useFavorites';
 import { categorySubjectAccent } from '../constants/subjectAccents';
@@ -36,12 +36,10 @@ function pushFamilyHistoryEntry(): void {
   // `any` payload, read verbatim and re-written in the router's own shape.
   const h: History = globalThis.window?.history;
   if (!h) return;
-  const prev: unknown = h.state;
-  const prevIdx =
-    prev && typeof prev === 'object' && 'idx' in prev
-      ? (prev as { idx?: unknown }).idx
-      : undefined;
-  const idx = (typeof prevIdx === 'number' && Number.isInteger(prevIdx) ? prevIdx : 0) + 1;
+  // SAFETY: Browser history.state is either null or a router state object carrying an integer `idx`.
+  const prev = h.state as { idx?: number } | null;
+  const prevIdx = prev && Number.isInteger(prev.idx) ? prev.idx : undefined;
+  const idx = (prevIdx ?? 0) + 1;
   const key = Math.random().toString(36).substring(2, 10);
   const state = { usr: NUMBER_FAMILY_HISTORY_STATE, key, idx };
   try {
@@ -388,22 +386,22 @@ export function VocabularyList() {
 
   const subCategoriesConfig = {
     animals: [
-      { id: 'all', en: 'All', ar: 'الكل' },
-      { id: 'animals', en: 'Animals', ar: 'الحيوانات' },
-      { id: 'insects', en: 'Insects', ar: 'الحشرات' }
+      { id: 'all', en: 'All', ar: 'الكل', ku: 'Hemû' },
+      { id: 'animals', en: 'Animals', ar: 'الحيوانات', ku: 'Ajal' },
+      { id: 'insects', en: 'Insects', ar: 'الحشرات', ku: 'Kêzik' }
     ],
     food: [
-      { id: 'all', en: 'All', ar: 'الكل' },
-      { id: 'food', en: 'Food & Meals', ar: 'الأطعمة والوجبات' },
-      { id: 'vegetables', en: 'Vegetables', ar: 'الخضروات' },
-      { id: 'fruits', en: 'Fruits', ar: 'الفواكه' }
+      { id: 'all', en: 'All', ar: 'الكل', ku: 'Hemû' },
+      { id: 'food', en: 'Food & Meals', ar: 'الأطعمة والوجبات', ku: 'Xwarin' },
+      { id: 'vegetables', en: 'Vegetables', ar: 'الخضروات', ku: 'Zebze' },
+      { id: 'fruits', en: 'Fruits', ar: 'الفواكه', ku: 'Fêkî' }
     ],
     time: [
-      { id: 'all', en: 'All', ar: 'الكل' },
-      { id: 'temporal', en: 'Time Units', ar: 'الوحدات الزمنية والفترات' },
-      { id: 'days', en: 'Days of the Week', ar: 'أيام الأسبوع' }
+      { id: 'all', en: 'All', ar: 'الكل', ku: 'Hemû' },
+      { id: 'temporal', en: 'Time Units', ar: 'الوحدات الزمنية والفترات', ku: 'Dem' },
+      { id: 'days', en: 'Days of the Week', ar: 'أيام الأسبوع', ku: 'Rojên Hefteyê' }
     ]
-  } satisfies Record<string, { id: string; en: string; ar: string }[]>;
+  } satisfies Record<string, { id: string; en: string; ar: string; ku: string }[]>;
 
   // Filter words based on search & academic level / sub-category flags
   // SAFETY: both dataset branches (academic + core vocabulary) carry the
@@ -440,27 +438,24 @@ export function VocabularyList() {
         return matchesSearch && matchesSubCategory;
       });
 
-  if (!category) return <div className="p-8 text-center text-slate-500 font-black">{language !== 'ar' ? 'Category not found' : 'لم يتم العثور على التصنيف المحدد'}</div>;
+  if (!category) return <div className="p-8 text-center text-slate-500 font-black">{pickLocalized(language, { en: 'Category not found', ar: 'لم يتم العثور على التصنيف المحدد', ku: 'Kategorî nehate dîtin' })}</div>;
 
-  // Subject accent for the Learning-Hub deep-links (Numbers / Colors): the hero
-  // adopts the same colour as its Learning Hub tile so the two screens visibly
-  // belong to one another. Every other category keeps its default gold plaque.
   const subjectAccent = categorySubjectAccent(categoryId);
 
   const headerBadge = isAcademic
-    ? (language !== 'ar' ? 'ACADEMIC PATH' : 'المسار الأكاديمي')
+    ? pickLocalized(language, { en: 'ACADEMIC PATH', ar: 'المسار الأكاديمي', ku: 'RÊYA AKADEMÎK' })
     : isNumbers
-      ? (language !== 'ar' ? 'NUMBERS' : 'الأرقام')
+      ? pickLocalized(language, { en: 'NUMBERS', ar: 'الأرقام', ku: 'JIMAR' })
       : isColors
-        ? (language !== 'ar' ? 'COLORS' : 'الألوان')
-        : (language !== 'ar' ? 'VOCABULARY UNIT' : 'وحدة الكلمات');
+        ? pickLocalized(language, { en: 'COLORS', ar: 'الألوان', ku: 'RENG' })
+        : pickLocalized(language, { en: 'VOCABULARY UNIT', ar: 'وحدة الكلمات', ku: 'YEKÎNEYA PEYVAN' });
 
   // SAFETY: Category | AcademicCategory union — the view names exactly the
   // label fields each member may define; every read below has a fallback.
   const categoryView = category as { nameEn?: string; nameAr?: string; name?: string; ar?: string };
   const categoryName = isAcademic
-    ? (language !== 'ar' ? categoryView.nameEn : categoryView.nameAr)
-    : (language !== 'ar' ? categoryView.name : (categoryView.ar || categoryView.name));
+    ? pickLocalized(language, { en: categoryView.nameEn || '', ar: categoryView.nameAr || '', ku: categoryView.nameEn || '' })
+    : pickLocalized(language, { en: categoryView.name || '', ar: categoryView.ar || categoryView.name || '', ku: categoryView.name || '' });
 
   // PHASE 8 (family model): the master Numbers grid anchors the naturals on
   // the key digits — ones 0–9, round tens 10…90, and 100. Each round ten opens
@@ -622,28 +617,17 @@ export function VocabularyList() {
       ? 'bg-sky-50 dark:bg-sky-950/30 border border-sky-200/60 dark:border-sky-800/50'
       : 'bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/50';
     const sectionLabel = isNumbers
-      ? (language === 'ar' ? 'الأرقام' : language === 'ku' ? 'Jimar' : 'Numbers')
-      : (language === 'ar' ? 'الألوان' : language === 'ku' ? 'Reng' : 'Colors');
-    // PHASE 8 family copy — the opener word ("Family of" / "Malbata" / "عائلة")
-    // is rendered next to the digit as a separate element with an explicit
-    // gap, so the two can never collapse into "Malbata90".
-    // (isFamilyExpanded / isAdvancedExpanded are derived at the top of the
-    // component alongside the family/advanced word lists.)
-    const familyCtaWord = language === 'ar' ? 'عائلة' : language === 'ku' ? 'Malbata' : 'Family of';
+      ? pickLocalized(language, { en: 'Numbers', ar: 'الأرقام', ku: 'Jimar' })
+      : pickLocalized(language, { en: 'Colors', ar: 'الألوان', ku: 'Reng' });
+    const familyCtaWord = pickLocalized(language, { en: 'Family of', ar: 'عائلة', ku: 'Malbata' });
     const familyAnchor = digitOf(openFamilyRoot);
     const familyLabel = isNumbers && openFamilyRoot ? `${familyCtaWord} ${familyAnchor}` : '';
     const backToAllLabel = isNumbers
-      ? (language === 'ar' ? 'عرض كل الأرقام' : language === 'ku' ? 'Hemû jimar' : 'All numbers')
+      ? pickLocalized(language, { en: 'All numbers', ar: 'عرض كل الأرقام', ku: 'Hemû jimar' })
       : '';
-    // PHASE 10 (advanced numbers) copy — a clearly-labelled optional extras
-    // entry (thousands → trillion), separate from the core 0→100 path.
     const advancedOpen = isNumbers && isAdvancedOpen;
-    const advancedLabel = (language === 'ar'
-      ? 'أعداد كبيرة'
-      : language === 'ku' ? 'Jimarên Mezin' : 'Large numbers');
-    const advancedCtaWord = language === 'ar'
-      ? 'تعلّم المزيد'
-      : language === 'ku' ? 'Bêtir Fêr Bibe' : 'Learn more';
+    const advancedLabel = pickLocalized(language, { en: 'Large numbers', ar: 'أعداد كبيرة', ku: 'Jimarên Mezin' });
+    const advancedCtaWord = pickLocalized(language, { en: 'Learn more', ar: 'تعلّم المزيد', ku: 'Bêtir Fêr Bibe' });
 
     const openFamily = (id: string) => {
       setFocusedId(id);
@@ -711,7 +695,7 @@ export function VocabularyList() {
                         <bdi>{focusedWord.ku}</bdi>
                       </p>
                       <p className="text-xs font-bold text-muted tracking-wider uppercase">
-                        <bdi>{language === 'ar' ? focusedWord.ar : focusedWord.en}</bdi>
+                        <bdi>{pickLocalized(language, { en: focusedWord.en, ar: focusedWord.ar, ku: focusedWord.en })}</bdi>
                       </p>
                     </div>
 
@@ -829,7 +813,7 @@ export function VocabularyList() {
                     transition={{ delay: Math.min(index * 0.02, 0.25), duration: 0.3 }}
                     onClick={() => setFocusedId(word.id)}
                     aria-pressed={isFocused}
-                    aria-label={`${word.ku} — ${language === 'ar' ? word.ar : word.en}${isLearned ? (language === 'ar' ? '، محفوظ' : ', learned') : ''}`}
+                    aria-label={`${word.ku} — ${pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en })}${isLearned ? pickLocalized(language, { en: ', learned', ar: '، محفوظ', ku: ', fêrbûyî' }) : ''}`}
                     className={`aspect-square rounded-2xl flex flex-col items-center justify-center font-black text-xl transition-all relative cursor-pointer select-none
                       ${isFocused
                         ? `${accent.well} border-2 ${focusBorder} ${accent.icon} shadow-md scale-105`
@@ -883,7 +867,7 @@ export function VocabularyList() {
                     transition={{ delay: Math.min(index * 0.02, 0.25), duration: 0.3 }}
                     onClick={() => setFocusedId(word.id)}
                     aria-pressed={isFocused}
-                    aria-label={`${word.ku} — ${language === 'ar' ? word.ar : word.en}${isLearned ? (language === 'ar' ? '، محفوظ' : ', learned') : ''}`}
+                    aria-label={`${word.ku} — ${pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en })}${isLearned ? pickLocalized(language, { en: ', learned', ar: '، محفوظ', ku: ', fêrbûyî' }) : ''}`}
                     className={`aspect-square rounded-2xl flex flex-col items-center justify-center gap-0.5 font-black text-base transition-all relative cursor-pointer select-none
                       ${isFocused
                         ? `${accent.well} border-2 ${focusBorder} ${accent.icon} shadow-md scale-105`
@@ -921,7 +905,7 @@ export function VocabularyList() {
                       transition={{ delay: Math.min(index * 0.02, 0.25), duration: 0.3 }}
                       onClick={() => setFocusedId(word.id)}
                       aria-pressed={isFocused}
-                      aria-label={`${word.ku} — ${language === 'ar' ? word.ar : word.en}${isLearned ? (language === 'ar' ? '، محفوظ' : ', learned') : ''}`}
+                      aria-label={`${word.ku} — ${pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en })}${isLearned ? pickLocalized(language, { en: ', learned', ar: '، محفوظ', ku: ', fêrbûyî' }) : ''}`}
                       className={`aspect-square rounded-2xl flex flex-col items-center justify-center font-black text-xl transition-all relative cursor-pointer select-none
                         ${isFocused
                           ? `${accent.well} border-2 ${focusBorder} ${accent.icon} shadow-md scale-105`
@@ -1039,7 +1023,9 @@ export function VocabularyList() {
         </span>
         {subjectAccent && (
           <span className={`mt-2 inline-block px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${subjectAccent.well} ${subjectAccent.icon}`}>
-            {isNumbers ? (language !== 'ar' ? 'Numbers' : 'الأرقام') : (language !== 'ar' ? 'Colors' : 'الألوان')}
+            {isNumbers
+              ? pickLocalized(language, { en: 'Numbers', ar: 'الأرقام', ku: 'Jimar' })
+              : pickLocalized(language, { en: 'Colors', ar: 'الألوان', ku: 'Reng' })}
           </span>
         )}
         <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">{categoryName}</h3>
@@ -1060,8 +1046,8 @@ export function VocabularyList() {
           {controlsExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           <span>
             {controlsExpanded
-              ? (language !== 'ar' ? 'Hide filters & search' : 'إخفاء التصفية والبحث')
-              : (language !== 'ar' ? 'Show filters & search' : 'إظهار التصفية والبحث')}
+              ? pickLocalized(language, { en: 'Hide filters & search', ar: 'إخفاء التصفية والبحث', ku: 'Parzûn û lêgerînê veşêre' })
+              : pickLocalized(language, { en: 'Show filters & search', ar: 'إظهار التصفية والبحث', ku: 'Parzûn û lêgerînê nîşan bide' })}
           </span>
         </button>
       )}
@@ -1124,7 +1110,7 @@ export function VocabularyList() {
                         : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400'
                     }`}
                   >
-                    <span>{language !== 'ar' ? sub.en : sub.ar}</span>
+                    <span>{pickLocalized(language, { en: sub.en, ar: sub.ar, ku: sub.ku })}</span>
                   </button>
                 );
               })}
@@ -1170,70 +1156,72 @@ export function VocabularyList() {
                        )}
                      </div>
                      
-                     <div className="flex items-center gap-2 mt-1 flex-wrap text-start">
-                       {language !== 'ar' ? (
-                         <span className="text-slate-500 dark:text-slate-400 text-xs font-bold leading-normal"><bdi>{word.en}</bdi></span>
-                       ) : (
-                         <span className="text-slate-500 dark:text-slate-400 text-xs font-bold font-arabic leading-normal"><bdi>{word.ar}</bdi></span>
-                       )}
+                      <div className="flex items-center gap-2 mt-1 flex-wrap text-start">
+                        <span className="text-slate-500 dark:text-slate-400 text-xs font-bold leading-normal">
+                          <bdi>{pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en })}</bdi>
+                        </span>
                        
-                       {/* Show secondary language translations subtitle in high-fidelity items */}
-                       {isAcademic && (
-                         <>
-                           <span className="text-slate-400 dark:text-slate-600 font-bold">•</span>
-                           <span className="text-slate-400 dark:text-slate-500 text-[10px] font-semibold">
-                             <bdi>{language !== 'ar' ? word.ar : word.en}</bdi>
-                           </span>
-                         </>
-                       )}
-                     </div>
-                   </div>
-                 </div>
+                        {/* Show secondary language translations subtitle in high-fidelity items */}
+                        {isAcademic && (
+                          <>
+                            <span className="text-slate-400 dark:text-slate-600 font-bold">•</span>
+                            <span className="text-slate-400 dark:text-slate-500 text-[10px] font-semibold">
+                              <bdi>{pickLocalized(language, { en: word.ar, ar: word.en, ku: word.ar })}</bdi>
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-                 {/* Premium Interaction Buttons */}
-                 <div className="flex items-center gap-1.5 shrink-0 ms-2">
-                   <button 
-                     type="button"
-                     onClick={(e) => {
-                       e.preventDefault();
-                       toggleFavorite(word.id);
-                     }}
-                     aria-label={isFavorite(word.id) ? (language !== 'ar' ? 'Remove from favorites' : 'إزالة من المفضلة') : (language !== 'ar' ? 'Add to favorites' : 'إضافة للمفضلة')}
-                     className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full transition-all border-none cursor-pointer hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 ${
-                       isFavorite(word.id) 
-                         ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-500' 
-                         : 'bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:bg-rose-50/50'
-                     }`}
-                     title={language !== 'ar' ? 'Favorite word' : 'إضافة للمفضلة'}
-                   >
-                     <Heart className={`w-4 h-4 ${isFavorite(word.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
-                   </button>
+                  {/* Premium Interaction Buttons */}
+                  <div className="flex items-center gap-1.5 shrink-0 ms-2">
+                    <button 
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleFavorite(word.id);
+                      }}
+                      aria-label={
+                        isFavorite(word.id)
+                          ? pickLocalized(language, { en: 'Remove from favorites', ar: 'إزالة من المفضلة', ku: 'Ji bijarteyan rake' })
+                          : pickLocalized(language, { en: 'Add to favorites', ar: 'إضافة للمفضلة', ku: 'Li bijarteyan zêde bike' })
+                      }
+                      className={`min-w-[44px] min-h-[44px] flex items-center justify-center p-2 rounded-full transition-all border-none cursor-pointer hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-indigo-600 ${
+                        isFavorite(word.id) 
+                          ? 'bg-rose-50 dark:bg-rose-950/30 text-rose-500' 
+                          : 'bg-slate-50 dark:bg-slate-950 text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:bg-rose-50/50'
+                      }`}
+                      title={pickLocalized(language, { en: 'Favorite word', ar: 'إضافة للمفضلة', ku: 'Peyva bijarte' })}
+                    >
+                      <Heart className={`w-4 h-4 ${isFavorite(word.id) ? 'fill-rose-500 text-rose-500' : ''}`} />
+                    </button>
                    
-                   <AudioButton 
-                     audioUrl={word.audio}
-                     textToSpeak={word.ku}
-                     className={`p-2 rounded-full transition-colors ${
-                       isAcademic 
-                         ? "bg-purple-50 dark:bg-purple-950/40 text-purple-600 hover:bg-purple-100 border-none" 
-                         : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 hover:bg-indigo-100 border-none"
-                     }`}
-                     iconClassName="w-4 h-4"
-                     showProgress={false}
-                   />
-                 </div>
-               </div>
+                    <AudioButton 
+                      audioUrl={word.audio}
+                      textToSpeak={word.ku}
+                      className={`p-2 rounded-full transition-colors ${
+                        isAcademic 
+                          ? "bg-purple-50 dark:bg-purple-950/40 text-purple-600 hover:bg-purple-100 border-none" 
+                          : "bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 hover:bg-indigo-100 border-none"
+                      }`}
+                      iconClassName="w-4 h-4"
+                      showProgress={false}
+                    />
+                  </div>
+                </div>
 
-               {/* Custom Academic / General Phrase Example block usage */}
-               {word.exampleKu && (
-                 <div className="bg-slate-50/80 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100/50 dark:border-slate-800/80 text-[11px] font-medium leading-relaxed mt-1 animate-fade-in">
-                   <p className="text-left font-extrabold text-slate-800 dark:text-slate-200 mb-0.5" dir="ltr">
-                     "<bdi lang="ku">{word.exampleKu}</bdi>"
-                   </p>
-                   <p className="text-slate-500 dark:text-slate-400">
-                     <bdi>{language !== 'ar' ? word.exampleEn : word.exampleAr}</bdi>
-                   </p>
-                 </div>
-               )}
+                {/* Custom Academic / General Phrase Example block usage */}
+                {word.exampleKu && (
+                  <div className="bg-slate-50/80 dark:bg-slate-950/40 p-3 rounded-xl border border-slate-100/50 dark:border-slate-800/80 text-[11px] font-medium leading-relaxed mt-1 animate-fade-in">
+                    <p className="text-left font-extrabold text-slate-800 dark:text-slate-200 mb-0.5" dir="ltr">
+                      "<bdi lang="ku">{word.exampleKu}</bdi>"
+                    </p>
+                    <p className="text-slate-500 dark:text-slate-400">
+                      <bdi>{pickLocalized(language, { en: word.exampleEn || '', ar: word.exampleAr || '', ku: word.exampleEn || '' })}</bdi>
+                    </p>
+                  </div>
+                )}
 
                {/* PHASE 2: lightweight inline recall — feeds the existing SM-2
                    reviewDeck through the exact same path the quiz uses. */}
@@ -1268,14 +1256,22 @@ export function VocabularyList() {
         {/* PHASE 3 (clutter): the full promotional AdBanner is demoted to a
             compact "go ad-free" hint on this focused study screen, so learning
             isn't interrupted. Monetization stays reachable (one tap → /store). */}
-        <button
-          type="button"
-          onClick={() => navigate('/store')}
-          className="w-full flex items-center justify-center gap-1.5 min-h-[36px] text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-300 transition-colors cursor-pointer bg-transparent border-none"
-        >
-          <Sparkles className="w-3 h-3" />
-          <span>{language !== 'ar' ? 'Studying ad-free · Go Premium' : 'تتعلّم بدون إعلانات · اشترك بريميوم'}</span>
-        </button>
+        {userData?.learnerMode !== 'kids' && (
+          <button
+            type="button"
+            onClick={() => navigate('/store')}
+            className="w-full flex items-center justify-center gap-1.5 min-h-[36px] text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-300 transition-colors cursor-pointer bg-transparent border-none"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>
+              {pickLocalized(language, {
+                en: 'Earn gems as you practice · Open Rewards Shop',
+                ar: 'اربح الجواهر أثناء التعلّم · افتح متجر المكافآت',
+                ku: 'Bi pratîkê cewheran qezenc bike · Firoşgeha Xelatan veke',
+              })}
+            </span>
+          </button>
+        )}
       </div>
       
     </div>

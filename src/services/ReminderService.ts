@@ -34,25 +34,13 @@ export function saveReminderSettings(settings: ReminderSettings): void {
   localStorage.setItem('kurdish_quest_reminder_settings', JSON.stringify(settings));
 }
 
-export function supportsNotifications(): boolean {
+function supportsNotifications(): boolean {
   return globalThis.window !== undefined && 'Notification' in window;
 }
 
-export function isNotificationPermissionGranted(): boolean {
+function isNotificationPermissionGranted(): boolean {
   if (!supportsNotifications()) return false;
   return Notification.permission === 'granted';
-}
-
-export async function requestNotificationPermission(): Promise<boolean> {
-  if (!supportsNotifications()) return false;
-  
-  try {
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
-  } catch (e) {
-    console.error('Error requesting notification permission', e);
-    return false;
-  }
 }
 
 function getTodayDateString(): string {
@@ -78,7 +66,7 @@ export interface ReminderCheckResult {
   title: string;
 }
 
-export interface ReminderContent {
+interface ReminderContent {
   title: string;
   body: string;
 }
@@ -142,7 +130,7 @@ function triggerNativeNotification(title: string, body: string): boolean {
   return false;
 }
 
-export function getReminderContent(lang: Language): ReminderContent {
+function getReminderContent(lang: Language): ReminderContent {
   if (lang === 'ku') {
     return {
       title: 'Kwesta Kurdî: Rêza Xwe Biparêze!',

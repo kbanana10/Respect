@@ -6,6 +6,7 @@
  */
 
 import { Language } from '../models/user';
+import { pickLocalized } from '../localization/translations';
 
 /**
  * Marker stored as `window.history.state.usr` on every native history entry
@@ -28,8 +29,7 @@ export interface RouteMeta {
 }
 
 export function getRouteMeta(pathname: string, language: Language): RouteMeta {
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
+  const loc = (ku: string, ar: string, en: string) => pickLocalized(language, { ku, ar, en });
 
   // 1. Home
   if (pathname === '/') {
@@ -37,9 +37,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: true,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'KWESTA KURDÎ' : isAr ? 'كويست الكورمانجية' : 'KURMANJI QUEST',
+      brandLabel: loc('KWESTA KURDÎ', 'كويست الكورمانجية', 'KURMANJI QUEST'),
       title: 'Zimanê Kurdî',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -49,9 +49,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: true,
       hideHeader: true,
       hideBottomNav: true,
-      brandLabel: isKu ? 'BI XÊR HATÎ' : isAr ? 'مرحباً' : 'WELCOME',
-      title: isKu ? 'Têketin' : isAr ? 'تسجيل الدخول' : 'Login',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('BI XÊR HATÎ', 'مرحباً', 'WELCOME'),
+      title: loc('Têketin', 'تسجيل الدخول', 'Login'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -61,9 +61,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: true,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'LÎSTEYA TÎPAN' : isAr ? 'دراسة الأبجدية' : 'ALPHABET STUDY',
-      title: isKu ? 'Tîpên Kurdî' : isAr ? 'الحروف الكوردية' : 'Letters',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('LÎSTEYA TÎPAN', 'دراسة الأبجدية', 'ALPHABET STUDY'),
+      title: loc('Tîpên Kurdî', 'الحروف الكوردية', 'Letters'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -73,9 +73,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'FERHENG Û PEYV' : isAr ? 'القاموس والمفردات' : 'DICTIONARY',
-      title: isKu ? 'Kategorî' : isAr ? 'التصنيفات' : 'Categories',
-      safeBackTo: isKu ? 'Rêç' : isAr ? 'الخارطة' : 'Roadmap',
+      brandLabel: loc('FERHENG Û PEYV', 'القاموس والمفردات', 'DICTIONARY'),
+      title: loc('Kategorî', 'التصنيفات', 'Categories'),
+      safeBackTo: loc('Rêç', 'الخارطة', 'Roadmap'),
     };
   }
 
@@ -85,9 +85,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'PEYV' : isAr ? 'المفردات' : 'VOCABULARY',
-      title: isKu ? 'Lîsteya Peyvan' : isAr ? 'قائمة الكلمات' : 'Word List',
-      safeBackTo: isKu ? 'Kategorî' : isAr ? 'التصنيفات' : 'Categories',
+      brandLabel: loc('PEYV', 'المفردات', 'VOCABULARY'),
+      title: loc('Lîsteya Peyvan', 'قائمة الكلمات', 'Word List'),
+      safeBackTo: loc('Kategorî', 'التصنيفات', 'Categories'),
     };
   }
 
@@ -97,9 +97,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'HEVOK' : isAr ? 'الجمل' : 'PHRASES',
-      title: isKu ? 'Hevokên Belav' : isAr ? 'العبارات الشائعة' : 'Common Phrases',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('HEVOK', 'الجمل', 'PHRASES'),
+      title: loc('Hevokên Belav', 'العبارات الشائعة', 'Common Phrases'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -109,9 +109,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'PEYV' : isAr ? 'كلمات' : 'WORDS',
-      title: isKu ? 'Peyv' : isAr ? 'كلمة' : 'Word',
-      safeBackTo: isKu ? 'Peyv' : isAr ? 'كلمات' : 'Words',
+      brandLabel: loc('PEYV', 'كلمات', 'WORDS'),
+      title: loc('Peyv', 'كلمة', 'Word'),
+      safeBackTo: loc('Peyv', 'كلمات', 'Words'),
     };
   }
 
@@ -121,9 +121,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'NIVÎSÎN' : isAr ? 'الكتابة' : 'WRITING',
-      title: isKu ? 'Peyv' : isAr ? 'كلمات' : 'Words',
-      safeBackTo: isKu ? 'Nivîsîn' : isAr ? 'الكتابة' : 'Writing',
+      brandLabel: loc('NIVÎSÎN', 'الكتابة', 'WRITING'),
+      title: loc('Peyv', 'كلمات', 'Words'),
+      safeBackTo: loc('Nivîsîn', 'الكتابة', 'Writing'),
     };
   }
 
@@ -133,9 +133,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'HEVOK' : isAr ? 'جُمَل' : 'SENTENCES',
-      title: isKu ? 'Hevok' : isAr ? 'جملة' : 'Sentence',
-      safeBackTo: isKu ? 'Hevok' : isAr ? 'جُمَل' : 'Sentences',
+      brandLabel: loc('HEVOK', 'جُمَل', 'SENTENCES'),
+      title: loc('Hevok', 'جملة', 'Sentence'),
+      safeBackTo: loc('Hevok', 'جُمَل', 'Sentences'),
     };
   }
 
@@ -145,9 +145,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'NIVÎSÎN' : isAr ? 'الكتابة' : 'WRITING',
-      title: isKu ? 'Hevok' : isAr ? 'جُمَل' : 'Sentences',
-      safeBackTo: isKu ? 'Nivîsîn' : isAr ? 'الكتابة' : 'Writing',
+      brandLabel: loc('NIVÎSÎN', 'الكتابة', 'WRITING'),
+      title: loc('Hevok', 'جُمَل', 'Sentences'),
+      safeBackTo: loc('Nivîsîn', 'الكتابة', 'Writing'),
     };
   }
 
@@ -157,9 +157,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'NIVÎSÎN' : isAr ? 'الكتابة' : 'WRITING',
-      title: isKu ? 'Şopandin' : isAr ? 'الكتابة' : 'Trace',
-      safeBackTo: isKu ? 'Nivîsîn' : isAr ? 'الكتابة' : 'Writing',
+      brandLabel: loc('NIVÎSÎN', 'الكتابة', 'WRITING'),
+      title: loc('Şopandin', 'الكتابة', 'Trace'),
+      safeBackTo: loc('Nivîsîn', 'الكتابة', 'Writing'),
     };
   }
 
@@ -169,21 +169,21 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'NIVÎSÎN' : isAr ? 'الكتابة' : 'WRITING',
-      title: isKu ? 'Nivîsîn' : isAr ? 'الكتابة' : 'Writing',
-      safeBackTo: isKu ? 'Fêrbûn' : isAr ? 'التعلّم' : 'Learning',
+      brandLabel: loc('NIVÎSÎN', 'الكتابة', 'WRITING'),
+      title: loc('Nivîsîn', 'الكتابة', 'Writing'),
+      safeBackTo: loc('Fêrbûn', 'التعلّم', 'Learning'),
     };
   }
 
-  // 6a. Grammar lesson placeholder (sub-category detail)
+  // 6a. Grammar lesson detail
   if (pathname.startsWith('/grammar/')) {
     return {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'RÊZIMAN' : isAr ? 'قواعد' : 'GRAMMAR',
-      title: isKu ? 'Ders' : isAr ? 'الدرس' : 'Lesson',
-      safeBackTo: isKu ? 'Rêziman' : isAr ? 'النحو' : 'Grammar',
+      brandLabel: loc('RÊZIMAN', 'قواعد', 'GRAMMAR'),
+      title: loc('Ders', 'الدرس', 'Lesson'),
+      safeBackTo: loc('Rêziman', 'النحو', 'Grammar'),
     };
   }
 
@@ -193,9 +193,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'RÊZIMAN' : isAr ? 'قواعد' : 'GRAMMAR',
-      title: isKu ? 'Rêziman' : isAr ? 'النحو' : 'Grammar',
-      safeBackTo: isKu ? 'Fêrbûn' : isAr ? 'التعلّم' : 'Learning',
+      brandLabel: loc('RÊZIMAN', 'قواعد', 'GRAMMAR'),
+      title: loc('Rêziman', 'النحو', 'Grammar'),
+      safeBackTo: loc('Fêrbûn', 'التعلّم', 'Learning'),
     };
   }
 
@@ -205,9 +205,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'KOMEL' : isAr ? 'مجموعتي' : 'SAVED',
-      title: isKu ? 'Bijare' : isAr ? 'المفضلة' : 'Favorites',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('KOMEL', 'مجموعتي', 'SAVED'),
+      title: loc('Bijare', 'المفضلة', 'Favorites'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -215,15 +215,11 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   if (pathname.startsWith('/quiz/')) {
     return {
       isMainTab: false,
-      // DESIGN FIX: the quiz screens render their own compact header (exit,
-      // mode title, hearts, counter). Stacking the app bar above it produced
-      // double chrome — two headers and two back affordances — in a flow
-      // that is declared immersive.
       hideHeader: true,
       hideBottomNav: true,
-      brandLabel: isKu ? 'PIRS' : isAr ? 'التحدي' : 'QUIZ ZONE',
-      title: isKu ? 'Pirs' : isAr ? 'اختبار' : 'Quiz',
-      safeBackTo: isKu ? 'Rêç' : isAr ? 'الخارطة' : 'Roadmap',
+      brandLabel: loc('PIRS', 'التحدي', 'QUIZ ZONE'),
+      title: loc('Pirs', 'اختبار', 'Quiz'),
+      safeBackTo: loc('Rêç', 'الخارطة', 'Roadmap'),
       shellMode: 'immersive',
     };
   }
@@ -234,9 +230,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: true,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'PLANA DERSAN' : isAr ? 'المنهج الدراسي' : 'CURRICULUM',
-      title: isKu ? 'Rêça Hînbûnê' : isAr ? 'الخارطة التعليمية' : 'Roadmap',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('PLANA DERSAN', 'المنهج الدراسي', 'CURRICULUM'),
+      title: loc('Rêça Hînbûnê', 'الخارطة التعليمية', 'Roadmap'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -246,9 +242,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: true,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'LÎSTIKÊN ŞAHIYÊ' : isAr ? 'ركن الألعاب' : 'FUN ARCADE',
-      title: isKu ? 'Lîstikên Perwerdeyê' : isAr ? 'الألعاب التعليمية' : 'Mini-Games',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('LÎSTIKÊN ŞAHIYÊ', 'ركن الألعاب', 'FUN ARCADE'),
+      title: loc('Lîstikên Perwerdeyê', 'الألعاب التعليمية', 'Mini-Games'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -258,9 +254,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'DIKANA GEWHERAN' : isAr ? 'متجر الجواهر' : 'GEM STORE',
-      title: isKu ? 'Dikan' : isAr ? 'المتجر' : 'Store',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('DIKANA GEWHERAN', 'متجر الجواهر', 'GEM STORE'),
+      title: loc('Dikan', 'المتجر', 'Store'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -270,9 +266,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'FERHENG' : isAr ? 'المعجم الكوردي' : 'GLOSSARY',
-      title: isKu ? 'Lêgerîn' : isAr ? 'البحث' : 'Search',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('FERHENG', 'المعجم الكوردي', 'GLOSSARY'),
+      title: loc('Lêgerîn', 'البحث', 'Search'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -282,9 +278,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: true,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'HESAB' : isAr ? 'الحساب' : 'ACCOUNT',
-      title: isKu ? 'Profîl' : isAr ? 'الملف الشخصي' : 'Profile',
-      safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+      brandLabel: loc('HESAB', 'الحساب', 'ACCOUNT'),
+      title: loc('Profîl', 'الملف الشخصي', 'Profile'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
     };
   }
 
@@ -294,9 +290,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'RÊZBÛN' : isAr ? 'الترتيب' : 'RANKING',
-      title: isKu ? 'Tabloya Pêşengan' : isAr ? 'لوحة الصدارة' : 'Leaderboard',
-      safeBackTo: isKu ? 'Profîl' : isAr ? 'الملف الشخصي' : 'Profile',
+      brandLabel: loc('RÊZBÛN', 'الترتيب', 'RANKING'),
+      title: loc('Tabloya Pêşengan', 'لوحة الصدارة', 'Leaderboard'),
+      safeBackTo: loc('Profîl', 'الملف الشخصي', 'Profile'),
     };
   }
 
@@ -306,9 +302,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'PARASTINA DANEYAN' : isAr ? 'الخصوصية' : 'COMPLIANCE',
-      title: isKu ? 'Rêbaza Nepeniyê' : isAr ? 'سياسة الخصوصية' : 'Privacy Policy',
-      safeBackTo: isKu ? 'Profîl' : isAr ? 'الملف الشخصي' : 'Profile',
+      brandLabel: loc('PARASTINA DANEYAN', 'الخصوصية', 'COMPLIANCE'),
+      title: loc('Rêbaza Nepeniyê', 'سياسة الخصوصية', 'Privacy Policy'),
+      safeBackTo: loc('Profîl', 'الملف الشخصي', 'Profile'),
     };
   }
 
@@ -318,9 +314,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
       isMainTab: false,
       hideHeader: false,
       hideBottomNav: false,
-      brandLabel: isKu ? 'ŞERTÊN BIKARANÎNÊ' : isAr ? 'الشروط' : 'COMPLIANCE',
-      title: isKu ? 'Mercên Xizmetê' : isAr ? 'شروط الخدمة' : 'Terms of Service',
-      safeBackTo: isKu ? 'Profîl' : isAr ? 'الملف الشخصي' : 'Profile',
+      brandLabel: loc('ŞERTÊN BIKARANÎNÊ', 'الشروط', 'COMPLIANCE'),
+      title: loc('Mercên Xizmetê', 'شروط الخدمة', 'Terms of Service'),
+      safeBackTo: loc('Profîl', 'الملف الشخصي', 'Profile'),
     };
   }
 
@@ -329,9 +325,9 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
     isMainTab: false,
     hideHeader: false,
     hideBottomNav: false,
-    brandLabel: isKu ? 'KWESTA KURDÎ' : isAr ? 'كويست الكورمانجية' : 'KURMANJI QUEST',
-    title: isKu ? 'Hîn Bibe' : isAr ? 'تعلم' : 'Learn',
-    safeBackTo: isKu ? 'Mal' : isAr ? 'الرئيسية' : 'Home',
+    brandLabel: loc('KWESTA KURDÎ', 'كويست الكورمانجية', 'KURMANJI QUEST'),
+    title: loc('Hîn Bibe', 'تعلم', 'Learn'),
+    safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
   };
 }
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check, RotateCcw, Eye } from 'lucide-react';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { recordReview, type ReviewDeck, type RecallGrade } from '../services/SpacedRepetitionService';
 import { cn } from '../utils/cn';
+import { pickLocalized } from '../localization/translations';
 
 /**
  * RecallButton.tsx — lightweight inline self-check for browse pages.
@@ -61,10 +62,8 @@ export function RecallButton({ wordId, className, size = 'sm' }: RecallButtonPro
     flashTimerRef.current = window.setTimeout(() => setFlash(null), 1600);
   };
 
-  const isKu = language === 'ku';
-  const isAr = language === 'ar';
-  const knewLabel = isKu ? 'Min zanîbû' : isAr ? 'حفظتها' : 'Knew it';
-  const againLabel = isKu ? 'Dîsa' : isAr ? 'أعدها' : 'Again';
+  const knewLabel = pickLocalized(language, { ku: 'Min zanîbû', ar: 'حفظتها', en: 'Knew it' });
+  const againLabel = pickLocalized(language, { ku: 'Dîsa', ar: 'أعدها', en: 'Again' });
 
   const getsAnEdge = size === 'block';
 
@@ -72,7 +71,7 @@ export function RecallButton({ wordId, className, size = 'sm' }: RecallButtonPro
     <div
       className={cn('inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 p-0.5', className)}
       role="group"
-      aria-label={isKu ? 'Xwe-ceribandinê' : isAr ? 'اختبر حفظك' : 'Self-check'}
+      aria-label={pickLocalized(language, { ku: 'Xwe-ceribandinê', ar: 'اختبر حفظك', en: 'Self-check' })}
     >
       <button
         type="button"
@@ -109,7 +108,7 @@ export function RecallButton({ wordId, className, size = 'sm' }: RecallButtonPro
       {getsAnEdge && status === null && (
         <span className="flex items-center gap-1 ps-1 pe-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
           <Eye className="w-3 h-3" />
-          {isKu ? 'Xwe-ceribîne' : isAr ? 'جرّب نفسك' : 'Self-check'}
+          {pickLocalized(language, { ku: 'Xwe-ceribîne', ar: 'جرّب نفسك', en: 'Self-check' })}
         </span>
       )}
     </div>

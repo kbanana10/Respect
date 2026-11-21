@@ -1,5 +1,5 @@
 import React from 'react';
-import { AudioButton } from '../../components/AudioButton';
+import { AudioButton } from '../../features/audio/components/AudioButton';
 
 /**
  * TriRow — the single fixed-geometry row used everywhere Kurmanji + audio +

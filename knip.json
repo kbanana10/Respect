@@ -3,20 +3,20 @@
     "scripts/replace_wav.ts",
     "audit/**/*.test.{ts,tsx}",
     "audit/setup.{ts,tsx}",
-    "audit/tools/*.mjs",
+    "src/domain/**/*.test.ts",
     "oxlint.config.mjs"
   ],
   "project": [
     "src/**/*.{ts,tsx}",
     "scripts/**/*.ts",
     "services/**/*.ts",
-    "audit/**/*.{ts,tsx,mjs}"
+    "audit/**/*.{ts,tsx}"
   ],
   "ignore": [
-    "src/features/audio/utils/audioSlug.ts"
+    "src/features/audio/utils/audioSlug.ts",
+    "src/services/TelemetryService.ts"
   ],
   "ignoreDependencies": [
-    "@capacitor/android",
     "tailwindcss"
   ]
 }

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '../../store/AuthContext';
 import type { GrammarLesson } from '../../data/grammar/types';
 import {
   checkExerciseAnswer,

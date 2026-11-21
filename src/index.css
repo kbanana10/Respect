@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,600..900;1,9..144,600..900&family=Noto+Kufi+Arabic:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-@variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* ==========================================================================
-   Kurdish Quest — "Warm Heritage Growth" design system (per DESIGN.md)
+   Kurdish Quest — "Warm Heritage Growth" design system (Offline-First Fonts)
    --------------------------------------------------------------------------
    Canvas   : Warm Porcelain Ivory #FBFBFA
    Cards    : Pure white, rounded-3xl (24–28px), soft ambient shadow
@@ -181,6 +180,89 @@ body {
   --color-line-soft: #383836;
   --color-brand: #FFBA38;
   --color-brand-deep: #FFCE6B;
+}
+
+/* --------------------------------------------------------------------------
+   Unlockable Theme Accents (Offline Rewards Shop)
+   -------------------------------------------------------------------------- */
+[data-accent="emerald"] {
+  --kq-gold: #10B981;
+  --kq-gold-dark: #059669;
+  --kq-gold-hover: #047857;
+  --kq-gold-text: #047857;
+  --kq-gold-on: #FFFFFF;
+  --kq-surface-2: #ECFDF5;
+  --kq-ring: #10B981;
+  --color-brand: #10B981;
+  --color-brand-deep: #047857;
+  --color-on-brand: #FFFFFF;
+}
+.dark[data-accent="emerald"] {
+  --kq-gold: #34D399;
+  --kq-gold-text: #6EE7B7;
+  --kq-gold-on: #022C22;
+  --kq-surface-2: #0F2922;
+  --color-brand: #34D399;
+  --color-brand-deep: #6EE7B7;
+}
+
+[data-accent="sky"] {
+  --kq-gold: #0EA5E9;
+  --kq-gold-dark: #0284C7;
+  --kq-gold-hover: #0369A1;
+  --kq-gold-text: #0369A1;
+  --kq-gold-on: #FFFFFF;
+  --kq-surface-2: #F0F9FF;
+  --kq-ring: #0EA5E9;
+  --color-brand: #0EA5E9;
+  --color-brand-deep: #0369A1;
+  --color-on-brand: #FFFFFF;
+}
+.dark[data-accent="sky"] {
+  --kq-gold: #38BDF8;
+  --kq-gold-text: #7DD3FC;
+  --kq-gold-on: #082F49;
+  --kq-surface-2: #0C2333;
+  --color-brand: #38BDF8;
+  --color-brand-deep: #7DD3FC;
+}
+
+[data-accent="rose"] {
+  --kq-gold: #F43F5E;
+  --kq-gold-dark: #E11D48;
+  --kq-gold-hover: #BE123C;
+  --kq-gold-text: #BE123C;
+  --kq-gold-on: #FFFFFF;
+  --kq-surface-2: #FFF1F2;
+  --kq-ring: #F43F5E;
+  --color-brand: #F43F5E;
+  --color-brand-deep: #BE123C;
+  --color-on-brand: #FFFFFF;
+}
+.dark[data-accent="rose"] {
+  --kq-gold: #FB7185;
+  --kq-gold-text: #FDA4AF;
+  --kq-gold-on: #4C0519;
+  --kq-surface-2: #2D1218;
+  --color-brand: #FB7185;
+  --color-brand-deep: #FDA4AF;
+}
+
+/* --------------------------------------------------------------------------
+   Kids Mode Adaptive Ergonomics (Ages 5–12)
+   Larger tap targets (min 48px), warmer storybook radius & clearer typography
+   -------------------------------------------------------------------------- */
+[data-learner-mode="kids"] {
+  --radius-control: 1.25rem;
+}
+[data-learner-mode="kids"] button:not([class*="h-"]):not([class*="min-h"]):not([class*="p-0"]) {
+  min-height: 48px;
+}
+[data-learner-mode="kids"] .text-xs {
+  font-size: 13.5px !important;
+}
+[data-learner-mode="kids"] .text-sm {
+  font-size: 15px !important;
 }
 
 /* Warm porcelain canvas — flat and calm, no loud gradients. */

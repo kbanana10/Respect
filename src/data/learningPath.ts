@@ -1,3 +1,5 @@
+import type { Language } from '../models/user';
+
 export interface LessonWord {
   id: string;
   ku: string;
@@ -13,29 +15,112 @@ export interface Lesson {
   id: string;
   titleEn: string;
   titleAr: string;
+  titleKu: string;
   descEn: string;
   descAr: string;
+  descKu: string;
   icon: string;
   xpReward: number;
   words: LessonWord[];
 }
 
 export interface CEFRLevel {
-  id: string; // 'A1', 'A2', 'B1', 'B2', 'Advanced'
+  id: string; // 'U0', 'A1', 'A2', 'B1', 'B2', 'Advanced'
   title: string;
+  titleAr: string;
+  titleKu: string;
   descEn: string;
   descAr: string;
+  descKu: string;
   requiredXp: number;
   color: string;
   lessons: Lesson[];
 }
 
+export function getLevelTitle(lvl: CEFRLevel, lang: Language): string {
+  if (lang === 'ar') return lvl.titleAr;
+  if (lang === 'ku') return lvl.titleKu;
+  return lvl.title;
+}
+
+export function getLevelDesc(lvl: CEFRLevel, lang: Language): string {
+  if (lang === 'ar') return lvl.descAr;
+  if (lang === 'ku') return lvl.descKu;
+  return lvl.descEn;
+}
+
+export function getLessonTitle(lesson: Lesson, lang: Language): string {
+  if (lang === 'ar') return lesson.titleAr;
+  if (lang === 'ku') return lesson.titleKu;
+  return lesson.titleEn;
+}
+
+export function getLessonDesc(lesson: Lesson, lang: Language): string {
+  if (lang === 'ar') return lesson.descAr;
+  if (lang === 'ku') return lesson.descKu;
+  return lesson.descEn;
+}
+
 export const learningPath: CEFRLevel[] = [
+  {
+    id: "U0",
+    title: "Unit 0 · Hawar Foundations",
+    titleAr: "الوحدة 0 · أسس أبجدية هوار",
+    titleKu: "Yekeya 0 · Bingeha Alfabeya Hawarê",
+    descEn: "Essential bridge into Kurmanji Latin script: distinct vowels, consonants, and your very first greetings.",
+    descAr: "الجسر التأسيسي لأبجدية هوار اللاتينية: الحروف الصوتية المميزة وأولى عبارات التحية.",
+    descKu: "Pira bingehîn ji bo alfabeya Hawarê: dengdêr, tîpên taybet û silavên te yên pêşîn.",
+    requiredXp: 0,
+    color: "from-amber-400 to-orange-500",
+    lessons: [
+      {
+        id: "u0_hawar_sounds",
+        titleEn: "Hawar Sounds & Special Letters",
+        titleAr: "أصوات هوار والحروف المميزة",
+        titleKu: "Dengên Hawarê û Tîpên Taybet",
+        descEn: "Master key Kurmanji letters (Ç, Ê, Î, Ş, Û, X) through clear everyday anchor words.",
+        descAr: "تعرّف على حروف الكرمانجية الخاصة (Ç, Ê, Î, Ş, Û, X) عبر كلمات يومية واضحة.",
+        descKu: "Tîpên taybet ên Kurmancî (Ç, Ê, Î, Ş, Û, X) bi peyvên rojane fêr bibe.",
+        icon: "Sparkles",
+        xpReward: 25,
+        words: [
+          { id: "u0_c_cay", ku: "Çay", en: "Tea (Ç = ch)", ar: "شاي (Ç = تش)", emoji: "🍵", audio: "/audio/hawar/cay.mp3", category: "hawar", difficulty: "easy" },
+          { id: "u0_e_sev", ku: "Sêv", en: "Apple (Ê = long e)", ar: "تفاحة (Ê = ياء ممدودة)", emoji: "🍎", audio: "/audio/food/apple.mp3", category: "hawar", difficulty: "easy" },
+          { id: "u0_i_sir", ku: "Şîr", en: "Milk (Ş = sh, Î = ee)", ar: "حليب (Ş = ش، Î = ي)", emoji: "🥛", audio: "/audio/food/milk.mp3", category: "hawar", difficulty: "easy" },
+          { id: "u0_u_rubar", ku: "Rûbar", en: "River (Û = oo)", ar: "نهر (Û = واو ممدودة)", emoji: "🏞️", audio: "/audio/nature/river.mp3", category: "hawar", difficulty: "easy" },
+          { id: "u0_x_xani", ku: "Xanî", en: "House (X = kh)", ar: "منزل (X = خ)", emoji: "🏠", audio: "/audio/hawar/xani.mp3", category: "hawar", difficulty: "medium" },
+          { id: "u0_j_jiyan", ku: "Jiyan", en: "Life (J = zh)", ar: "حياة (J = ج فرنسية)", emoji: "🌱", audio: "/audio/hawar/jiyan.mp3", category: "hawar", difficulty: "medium" }
+        ]
+      },
+      {
+        id: "u0_first_greetings",
+        titleEn: "First Greetings & Courtesy",
+        titleAr: "أولى التحيات واللباقة",
+        titleKu: "Silavên Pêşîn û Rêzdarî",
+        descEn: "Say hello, thank you, yes, no, and introduce yourself warmly in Kurmanji.",
+        descAr: "قل مرحباً وشكراً ونعم ولا وقدّم نفسك بلطف باللغة الكردية الكرمانجية.",
+        descKu: "Bibêje silav, spas, erê, na û xwe bi germî bidî nasîn.",
+        icon: "MessageCircle",
+        xpReward: 25,
+        words: [
+          { id: "u0_silav", ku: "Silav", en: "Hello", ar: "مرحباً", emoji: "👋", audio: "/audio/conversation/hello.mp3", category: "greetings", difficulty: "easy" },
+          { id: "u0_spas", ku: "Spas", en: "Thank you", ar: "شكراً", emoji: "🙏", audio: "/audio/conversation/thanks.mp3", category: "greetings", difficulty: "easy" },
+          { id: "u0_ere", ku: "Erê", en: "Yes", ar: "نعم", emoji: "✅", audio: "/audio/greetings/yes.mp3", category: "greetings", difficulty: "easy" },
+          { id: "u0_na", ku: "Na", en: "No", ar: "لا", emoji: "❌", audio: "/audio/greetings/no.mp3", category: "greetings", difficulty: "easy" },
+          { id: "u0_rojbas", ku: "Roj baş", en: "Good day", ar: "نهارك سعيد", emoji: "☀️", audio: "/audio/greetings/good_day.mp3", category: "greetings", difficulty: "easy" },
+          { id: "u0_sevbas", ku: "Şev baş", en: "Good night", ar: "تصبح على خير", emoji: "🌙", audio: "/audio/greetings/good_night.mp3", category: "greetings", difficulty: "easy" }
+        ]
+      }
+    ]
+  },
   {
     id: "A1",
     title: "Beginner A1",
+    titleAr: "المبتدئ A1",
+    titleKu: "Destpêk A1",
     descEn: "Basic foundations, family greetings, and natural domains.",
     descAr: "الأساسيات والمبادئ الأولية، مفردات العائلة والترحيب وعناصر الطبيعة.",
+    descKu: "Bingeha ziman, peyvên malbatê, silav û hêmanên xwezayê.",
     requiredXp: 0,
     color: "from-emerald-500 to-green-600",
     lessons: [
@@ -43,8 +128,10 @@ export const learningPath: CEFRLevel[] = [
         id: "a1_family",
         titleEn: "Family & Relatives",
         titleAr: "العائلة والقرابة",
+        titleKu: "Malbat û Xizm",
         descEn: "Learn to address primary household names under familial terms.",
         descAr: "تعلم نطق وكتابة أفراد العائلة والأقارب بلغة كوردية صحيحة.",
+        descKu: "Navên endamên malbatê û xizman bi Kurmancî fêr bibe.",
         icon: "Users",
         xpReward: 30,
         words: [
@@ -60,8 +147,10 @@ export const learningPath: CEFRLevel[] = [
         id: "a1_nature",
         titleEn: "Nature & Wilderness",
         titleAr: "الطبيعة والبيئة",
+        titleKu: "Xweza û Jîngeh",
         descEn: "Describe mountains, trees, water, and outdoor elements.",
         descAr: "تعلم أسماء معالم الطبيعة كالجبال والوديان والماء باللغة الكرمانجية.",
+        descKu: "Navên çiya, dar, av, roj û kulîlkan bi Kurmancî nas bike.",
         icon: "TreePine",
         xpReward: 30,
         words: [
@@ -77,9 +166,12 @@ export const learningPath: CEFRLevel[] = [
   },
   {
     id: "A2",
-    title: "Beginner A2",
+    title: "Elementary A2",
+    titleAr: "الأساسي A2",
+    titleKu: "Bingehîn A2",
     descEn: "Interactive objects, animals, food, and basic navigation transportation.",
     descAr: "الأمور التفاعلية، الحيوانات اليومية، أصناف الأطعمة، ووسائل النقل والتحرك السريع.",
+    descKu: "Ajalên rojane, xwarin û vexwarin, û amûrên çûnûhatinê.",
     requiredXp: 150,
     color: "from-sky-500 to-blue-600",
     lessons: [
@@ -87,8 +179,10 @@ export const learningPath: CEFRLevel[] = [
         id: "a2_animals",
         titleEn: "Animal Kingdom",
         titleAr: "مملكة الحيوان",
+        titleKu: "Cîhana Ajalan",
         descEn: "Master names of wild and domestic birds, dogs, cats, and mammals.",
         descAr: "تعلم الكلمات الخاصة بأسماء الحيوانات الأليفة والبرية وأصواتها.",
+        descKu: "Navên ajalên malê û yên kovî bi Kurmancî fêr bibe.",
         icon: "Cat",
         xpReward: 35,
         words: [
@@ -104,8 +198,10 @@ export const learningPath: CEFRLevel[] = [
         id: "a2_food",
         titleEn: "Food & Meals",
         titleAr: "الطعام والتغذية",
+        titleKu: "Xwarin û Xurek",
         descEn: "Name basic commodities like bread, honey, tea, and dining items.",
         descAr: "مسميات العناصر الغذائية الأساسية كالخبز والعسل والشاي والجبن.",
+        descKu: "Navên xwarinên bingehîn wekî nan, hingiv, penîr û sêv.",
         icon: "Utensils",
         xpReward: 35,
         words: [
@@ -121,14 +217,16 @@ export const learningPath: CEFRLevel[] = [
         id: "a2_transport",
         titleEn: "Transportation",
         titleAr: "وسائل المواصلات والنقل",
+        titleKu: "Veguhestin û Rêwîtî",
         descEn: "Understand essential terms for cars, trains, airplanes, and streets.",
         descAr: "مفردات السيارات، الطائرات، القطارات والشوارع بالكوردية.",
+        descKu: "Peyvên bingehîn ji bo erebe, trên, balafir û bisîkletê.",
         icon: "Car",
         xpReward: 35,
         words: [
           { id: "tr_car", ku: "Erebe / Otomobîl", en: "Car", ar: "سيارة", emoji: "🚗", audio: "/audio/transportation/car.mp3", category: "transportation", difficulty: "easy" },
           { id: "tr_bus", ku: "Otobus", en: "Bus", ar: "حافلة", emoji: "🚌", audio: "/audio/transportation/bus.mp3", category: "transportation", difficulty: "easy" },
-          { id: "tr_train", ku: "Trên", en: "Train", ar: "قطار", emoji: " train", audio: "/audio/transportation/train.mp3", category: "transportation", difficulty: "medium" },
+          { id: "tr_train", ku: "Trên", en: "Train", ar: "قطار", emoji: "🚂", audio: "/audio/transportation/train.mp3", category: "transportation", difficulty: "medium" },
           { id: "tr_plane", ku: "Balafir", en: "Airplane", ar: "طائرة", emoji: "✈️", audio: "/audio/transportation/plane.mp3", category: "transportation", difficulty: "hard" },
           { id: "tr_ship", ku: "Keştî", en: "Ship", ar: "سفينة", emoji: "🚢", audio: "/audio/transportation/ship.mp3", category: "transportation", difficulty: "hard" },
           { id: "tr_cycle", ku: "Bisîklet", en: "Bicycle", ar: "دراجة هوائية", emoji: "🚲", audio: "/audio/transportation/bicycle.mp3", category: "transportation", difficulty: "medium" }
@@ -139,8 +237,11 @@ export const learningPath: CEFRLevel[] = [
   {
     id: "B1",
     title: "Intermediate B1",
+    titleAr: "المتوسط B1",
+    titleKu: "Navîn B1",
     descEn: "Expressing travel directives, emotions, and local situations.",
     descAr: "التوجيهات والمسارات عند السفر، التعبير عن المشاعر، والمحادثات الحيوية البسيطة.",
+    descKu: "Rêwîtî, hest û derbirînên rojane di jiyanê de.",
     requiredXp: 450,
     color: "from-indigo-500 to-purple-600",
     lessons: [
@@ -148,8 +249,10 @@ export const learningPath: CEFRLevel[] = [
         id: "b1_travel",
         titleEn: "Travel & Hospitality",
         titleAr: "السفر والضيافة",
+        titleKu: "Geşt û Mêvanperwerî",
         descEn: "Navigate hotels, passport controls, airports, and ask directions.",
         descAr: "عبارات الفنادق والمطارات، حقيبة اليد، والمستندات الرسمية وإعطاء التوجيهات.",
+        descKu: "Peyvên otêl, pasaport, bîlet, nexşe û pirsîna rê.",
         icon: "Plane",
         xpReward: 40,
         words: [
@@ -165,8 +268,10 @@ export const learningPath: CEFRLevel[] = [
         id: "b1_emotions",
         titleEn: "Emotions & Feelings",
         titleAr: "المشاعر والعواطف",
+        titleKu: "Hest û Dil",
         descEn: "Describe happiness, anger, sadness, fear, and fatigue.",
         descAr: "تعلم نطق مشاعر السعادة، الحزن، الخوف، الغضب، والتعب بالكوردية.",
+        descKu: "Hestên şahî, xemgînî, hêrs, westan û kêfxweşiyê fêr bibe.",
         icon: "Heart",
         xpReward: 40,
         words: [
@@ -182,8 +287,10 @@ export const learningPath: CEFRLevel[] = [
         id: "b1_conversation",
         titleEn: "Daily Conversation",
         titleAr: "جمل المحادثة اليومية",
+        titleKu: "Axaftina Rojane",
         descEn: "Engage in friendly chat, ask about health, and state replies.",
         descAr: "خوض غمار الترحيب اللطيف، والسؤال عن الحال وتقديم عبارات الشكر والامتنان.",
+        descKu: "Hevpeyvînên germ, pirsîna rewşê û bersivên rojane.",
         icon: "MessageCircle",
         xpReward: 40,
         words: [
@@ -199,9 +306,12 @@ export const learningPath: CEFRLevel[] = [
   },
   {
     id: "B2",
-    title: "Intermediate B2",
+    title: "Upper Intermediate B2",
+    titleAr: "فوق المتوسط B2",
+    titleKu: "Navîn Bilind B2",
     descEn: "Advanced domains of technology, university lectures, physics, and medical checkups.",
     descAr: "العوالم المتقدمة لتقنيات الحاسوب والإنترنت والفيزياء، والمواقع الطبية والمصطلحات الجامعية.",
+    descKu: "Qadên pêşketî yên teknolojî, zanîngeh, lêkolîn û tenduristiyê.",
     requiredXp: 800,
     color: "from-purple-500 to-pink-600",
     lessons: [
@@ -209,8 +319,10 @@ export const learningPath: CEFRLevel[] = [
         id: "b2_technology",
         titleEn: "Technology & Computing",
         titleAr: "التكنولوجيا والاتصالات",
+        titleKu: "Teknolojî û Kompûter",
         descEn: "Learn computer names, internet software, and communication media icons.",
         descAr: "أدوات التكنولوجيا المتقدمة، شاشات الحواسيب، البرمجيات وشبكة المعلومات.",
+        descKu: "Peyvên kompûter, înternet, bername û ragihandina dîjîtal.",
         icon: "Laptop",
         xpReward: 45,
         words: [
@@ -226,8 +338,10 @@ export const learningPath: CEFRLevel[] = [
         id: "b2_university",
         titleEn: "University & Research",
         titleAr: "التعليم الجامعي والبحث العلمي",
+        titleKu: "Zanîngeh û Lêkolîn",
         descEn: "Express exams, lecture theaters, research criteria, and academic ranks.",
         descAr: "مصطلحات الامتحانات، المدرج الدراسي، مراتب العلوم، وبحوث التخرج والدرجات.",
+        descKu: "Termên ezmûn, wane, xwendekar û lêkolînên akademîk.",
         icon: "Landmark",
         xpReward: 45,
         words: [
@@ -243,8 +357,10 @@ export const learningPath: CEFRLevel[] = [
         id: "b2_medical",
         titleEn: "Medical & Health",
         titleAr: "المصطلحات الطبية والصحة",
+        titleKu: "Tenduristî û Bijîşkî",
         descEn: "Describe clinic items, prescription drugs, fever, doctors and nurse tasks.",
         descAr: "العيادات الطبية، الأدوية، تخصص الأطباء وطاقم التمريض والصحة العامة.",
+        descKu: "Peyvên nexweşxane, bijîşk, derman û tenduristiya rojane.",
         icon: "Stethoscope",
         xpReward: 45,
         words: [
@@ -261,8 +377,11 @@ export const learningPath: CEFRLevel[] = [
   {
     id: "Advanced",
     title: "Advanced C1",
+    titleAr: "المتقدم C1",
+    titleKu: "Pêşketî C1",
     descEn: "Professional operations, business transactions, corporate roles, and advanced idioms.",
     descAr: "المعاملات المهنية والتجارية المتقدمة، وظائف الشركات والمؤسسات، والتعبيرات الاصطلاحية العميقة.",
+    descKu: "Karên pîşeyî, civîn, peyman û şêwazên pêşketî yên zimanî.",
     requiredXp: 1300,
     color: "from-amber-500 to-rose-600",
     lessons: [
@@ -270,8 +389,10 @@ export const learningPath: CEFRLevel[] = [
         id: "c1_business",
         titleEn: "Business & Corporate",
         titleAr: "الأعمال والشركات",
+        titleKu: "Kar û Bazirganî",
         descEn: "Master corporate dialogue, office spaces, salaries, and executive hierarchy.",
         descAr: "مفردات بيئة العمل، الرواتب والعملات، وعقد الاجتماعات والقيادة بالكوردية.",
+        descKu: "Peyvên ofîs, rêveberî, civîn, meaş û peymanên karî.",
         icon: "Briefcase",
         xpReward: 50,
         words: [

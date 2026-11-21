@@ -6,6 +6,7 @@ import { Language } from '../../models/user';
 import { playSuccessSound, playFailureSound, playCompleteSound } from '../../features/audio/hooks/useAudio';
 import { Progress } from '../ui';
 import { GameHeader } from './GameHeader';
+import { pickLocalized } from '../../localization/translations';
 
 interface WordMatchingGameProps {
   vocabulary: Word[];
@@ -272,22 +273,26 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
           time indicator + XP score pill live HERE now, in the same end-side
           position every game uses (the old separate HUD card is gone). */}
       <GameHeader
-        title={language !== 'ar' ? 'Word Matching' : 'مطابقة الكلمات'}
+        title={pickLocalized(language, { en: 'Word Matching', ar: 'مطابقة الكلمات', ku: 'Hevberkirina Peyvan' })}
         onExit={onClose}
-        exitLabel={language !== 'ar' ? 'Exit game' : 'الخروج من اللعبة'}
+        exitLabel={pickLocalized(language, { en: 'Exit game', ar: 'الخروج من اللعبة', ku: 'Ji lîstikê derkeve' })}
         indicator={
           <span className="flex items-center gap-1 rounded-full px-2.5 min-h-[36px] bg-white dark:bg-slate-900 border border-line-soft shadow-[0_2px_10px_rgba(0,0,0,0.04)] text-xs font-black tabular-nums text-ink">
             <Clock className="w-3.5 h-3.5 text-[#B45309]" />
             <span dir="ltr">{formatTime(timeLeft)}</span>
           </span>
         }
-        stat={{ label: language !== 'ar' ? 'XP' : 'خبرة', value: gainedXP }}
+        stat={{ label: pickLocalized(language, { en: 'XP', ar: 'خبرة', ku: 'XP' }), value: gainedXP }}
       />
 
       {/* Instruction Prompt */}
       <div className="text-center mb-4">
         <p className="text-xs font-black text-slate-600 dark:text-slate-300">
-          {language !== 'ar' ? 'Connect the word with its correct meaning' : 'صل الكلمة بمعناها الصحيح'}
+          {pickLocalized(language, {
+            en: 'Connect the word with its correct meaning',
+            ar: 'صل الكلمة بمعناها الصحيح',
+            ku: 'Peyvê bi wateya wê ya rast ve girê bide',
+          })}
         </p>
       </div>
 
@@ -300,25 +305,27 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
           
           <div className="space-y-1">
             <h3 className="text-2xl font-black text-red-600 dark:text-red-500 uppercase tracking-widest">
-              {language !== 'ar' ? 'Attempts Depleted' : 'استنفاد المحاولات!'}
+              {pickLocalized(language, { en: 'Attempts Depleted', ar: 'استنفاد المحاولات!', ku: 'Mafên Te Qediyan!' })}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">
-              {language !== 'ar' 
-                ? `You made too many wrong connections at Round ${round}.` 
-                : `للأسف أخطأت في توصيل الكلمات في الجولة ${round}.`}
+              {pickLocalized(language, {
+                en: `You made too many wrong connections at Round ${round}.`,
+                ar: `للأسف أخطأت في توصيل الكلمات في الجولة ${round}.`,
+                ku: `Di gera ${round} de pir şaşî çêbûn.`,
+              })}
             </p>
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl w-full max-w-sm text-xs space-y-2 text-start shadow-xs">
             <p className="text-slate-500 text-center font-bold">
-              {language !== 'ar' ? 'Battle History' : 'سجل التوصيل الإجمالي'}
+              {pickLocalized(language, { en: 'Round Summary', ar: 'سجل التوصيل الإجمالي', ku: 'Kurteya Gerê' })}
             </p>
             <div className="flex justify-between text-slate-600 dark:text-slate-400 mt-2 font-bold select-none pb-1.5 border-b border-slate-200 dark:border-slate-800">
-              <span>{language !== 'ar' ? 'Max Round Reached:' : 'أقصى جولة وصلتها:'}</span>
+              <span>{pickLocalized(language, { en: 'Max Round Reached:', ar: 'أقصى جولة وصلتها:', ku: 'Gera Herî Bilind:' })}</span>
               <span className="text-indigo-600 font-black">{round}</span>
             </div>
             <div className="flex justify-between text-slate-600 dark:text-slate-400 mt-2 font-bold select-none">
-              <span>{language !== 'ar' ? 'XP Points Gained:' : 'النقاط التي جمعتها:'}</span>
+              <span>{pickLocalized(language, { en: 'XP Points Gained:', ar: 'النقاط التي جمعتها:', ku: 'XP ya Qezencbûyî:' })}</span>
               <span className="text-yellow-500 font-black">{gainedXP} XP</span>
             </div>
           </div>
@@ -328,14 +335,14 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
               onClick={onClose}
               className="flex-1 py-3.5 min-h-[44px] bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 active:scale-95 text-slate-700 dark:text-slate-300 font-bold rounded-full text-xs transition-all border border-slate-200 dark:border-slate-800 cursor-pointer outline-none"
             >
-              {language !== 'ar' ? 'Exit to Games' : 'صندوق الألعاب'}
+              {pickLocalized(language, { en: 'Exit to Games', ar: 'صندوق الألعاب', ku: 'Vegere Lîstikan' })}
             </button>
             <button
               onClick={resetGameHandler}
               className="flex-1 py-3.5 min-h-[44px] bg-[#FFB300] hover:bg-[#E69500] text-[#432C00] shadow-[0_2px_0_#E69500] active:scale-95 font-extrabold rounded-full text-xs transition-all cursor-pointer outline-none flex items-center justify-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>{language !== 'ar' ? 'Try from Round 1' : 'ابدأ مجدداً كالمحترفين'}</span>
+              <span>{pickLocalized(language, { en: 'Try from Round 1', ar: 'ابدأ مجدداً', ku: 'Ji Gera 1 dest pê bike' })}</span>
             </button>
           </div>
         </div>
@@ -344,7 +351,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
           {/* Progress & Info */}
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200/10 dark:border-slate-800 shadow-xs mb-6 text-center space-y-3">
             <div className="flex justify-between items-center text-xs text-slate-400 font-bold">
-              <span>{language !== 'ar' ? 'Matched Pairs' : 'الأزواج الموصولة'}</span>
+              <span>{pickLocalized(language, { en: 'Matched Pairs', ar: 'الأزواج الموصولة', ku: 'Cotên Lihevkirî' })}</span>
               <span>{kurdishList.filter(i => i.isMatched).length} / {pairsCount}</span>
             </div>
             
@@ -352,11 +359,11 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
 
             {/* Lives / Attempts Display */}
             <div className="flex justify-between items-center text-xs text-slate-400 font-bold pt-1 border-t border-dashed border-slate-200 dark:border-slate-800">
-              <span>{language !== 'ar' ? 'Hearts / Attempts' : 'القلوب ومحاولات الخطأ'}</span>
+              <span>{pickLocalized(language, { en: 'Hearts / Attempts', ar: 'القلوب ومحاولات الخطأ', ku: 'Dil / Ceribandin' })}</span>
               <span className="flex gap-1 items-center">
                 {lives === null ? (
                   <span className="text-emerald-500 text-[11px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full">
-                    ∞ {language !== 'ar' ? 'Unlimited (R1)' : 'غير محدودة (ج1)'}
+                    ∞ {pickLocalized(language, { en: 'Unlimited (R1)', ar: 'غير محدودة (ج1)', ku: 'Bêsînor (G1)' })}
                   </span>
                 ) : (
                   <div className="flex gap-0.5">
@@ -369,9 +376,11 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
             </div>
 
             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-              {language !== 'ar' 
-                ? 'Tap a Kurdish word, then tap its matching Arabic meaning!' 
-                : 'اختر الكلمة الكوردية، ثم اضغط على معناها الصحيح بالعربية لتوصيلهما!'}
+              {pickLocalized(language, {
+                en: 'Tap a Kurdish word, then tap its matching meaning!',
+                ar: 'اختر الكلمة الكوردية، ثم اضغط على معناها الصحيح بالعربية لتوصيلهما!',
+                ku: 'Peyveke Kurmancî hilbijêre, paşê wateya wê ya rast bitikîne!',
+              })}
             </p>
           </div>
 
@@ -380,7 +389,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
             {/* Left Column: Kurdish Words */}
             <div className="space-y-3.5">
               <h3 className="text-xs font-black text-slate-400 text-center uppercase tracking-widest leading-none mb-1">
-                {language !== 'ar' ? 'Kurmanji' : 'كرمانجي'}
+                {pickLocalized(language, { en: 'Kurmanji', ar: 'كرمانجي', ku: 'Kurmancî' })}
               </h3>
               <AnimatePresence mode="popLayout">
                 {kurdishList.map((item) => {
@@ -416,7 +425,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
             {/* Right Column: Arabic meanings */}
             <div className="space-y-3.5">
               <h3 className="text-xs font-black text-slate-400 text-center uppercase tracking-widest leading-none mb-1">
-                {language !== 'ar' ? 'Arabic' : 'العربية'}
+                {pickLocalized(language, { en: 'Arabic', ar: 'العربية', ku: 'Wate' })}
               </h3>
               <AnimatePresence mode="popLayout">
                 {arabicList.map((item) => {
@@ -476,7 +485,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
               <div className="flex items-center gap-1">
                 <span>10</span>
                 <Coins className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
-                <span>{language !== 'ar' ? 'Hint' : 'تلميح'}</span>
+                <span>{pickLocalized(language, { en: 'Hint', ar: 'تلميح', ku: 'Alîkarî' })}</span>
               </div>
             </button>
 
@@ -485,7 +494,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
               className="flex-1 py-3 px-4 min-h-[44px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center gap-2 font-black text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shadow-xs cursor-pointer"
             >
               <RefreshCw className="w-4 h-4 text-indigo-600" />
-              <span>{language !== 'ar' ? 'Restart' : 'إعادة اللعبة'}</span>
+              <span>{pickLocalized(language, { en: 'Restart', ar: 'إعادة اللعبة', ku: 'Ji nû ve' })}</span>
             </button>
           </div>
         </>
@@ -504,18 +513,22 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
               <div className="absolute right-0 top-0 text-7xl opacity-5 select-none pointer-events-none">🏆</div>
               <div className="space-y-1 relative z-10">
                 <h3 className="text-xl font-black">
-                  {language !== 'ar' ? 'Brilliant Connection!' : 'ترابط عبقري وممتاز!'}
+                  {pickLocalized(language, { en: 'Brilliant Connection!', ar: 'ترابط عبقري وممتاز!', ku: 'Hevberkirineke Bêhempa!' })}
                 </h3>
                 <p className="text-xs text-indigo-100">
-                  {language !== 'ar' 
-                    ? 'All words matched perfectly in this round.' 
-                    : `أوصلت الكلمات الكوردية مع معانيها ببراعة في الجولة ${round}!`}
+                  {pickLocalized(language, {
+                    en: 'All words matched perfectly in this round.',
+                    ar: `أوصلت الكلمات الكوردية مع معانيها ببراعة في الجولة ${round}!`,
+                    ku: `Hemû peyv di gera ${round} de bi serkeftî hatin hevberkirin!`,
+                  })}
                 </p>
               </div>
 
               <div className="inline-flex bg-white/15 rounded-2xl items-center justify-center py-2.5 px-4 gap-2 border border-white/5 font-extrabold text-xs">
                 <Award className="w-4 h-4 text-yellow-300 fill-yellow-300 animate-pulse" />
-                <span>+{10 + (round - 1) * 5} XP {language !== 'ar' ? 'Points Earned' : 'نقطة إضافية مضافة'}</span>
+                <span>
+                  +{10 + (round - 1) * 5} XP {pickLocalized(language, { en: 'Points Earned', ar: 'نقطة إضافية مضافة', ku: 'Qezenc bû' })}
+                </span>
               </div>
 
               <div className="flex gap-3 relative z-10 pt-1">
@@ -523,19 +536,19 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
                   onClick={onClose}
                   className="flex-1 py-3 min-h-[44px] bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold rounded-full text-xs transition-all border border-white/10 cursor-pointer outline-none"
                 >
-                  {language !== 'ar' ? 'Back' : 'الرئيسية'}
+                  {pickLocalized(language, { en: 'Back', ar: 'الرئيسية', ku: 'Vegere' })}
                 </button>
                 <button
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (advanceRoundLockRef.current) return; // one click = one round
+                    if (advanceRoundLockRef.current) return;
                     advanceRoundLockRef.current = true;
                     setRound(r => r + 1);
                   }}
                   className="flex-1 py-3 min-h-[44px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black rounded-full text-xs hover:from-emerald-400 hover:to-emerald-500 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 outline-none"
                 >
-                  <span>{language !== 'ar' ? 'Next Round' : 'الجولة التالية'}</span>
+                  <span>{pickLocalized(language, { en: 'Next Round', ar: 'الجولة التالية', ku: 'Gera Din' })}</span>
                   <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
                 </button>
               </div>

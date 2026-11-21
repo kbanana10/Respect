@@ -12,3 +12,6 @@ export { StatPill } from './StatPill';
 export { Spinner } from './Spinner';
 export { ErrorState } from './ErrorState';
 export { Switch } from './Switch';
+export { ParentalGateModal } from './ParentalGateModal';
+export { OptionRow } from './OptionRow';
+export { SegmentedControl } from './SegmentedControl';

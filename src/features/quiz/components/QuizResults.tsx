@@ -7,7 +7,7 @@ import React from 'react';
 import Confetti from 'react-confetti';
 import { Trophy, Sparkles, ArrowRight } from 'lucide-react';
 import { Language } from '../../../models/user';
-import { t } from '../../../localization/translations';
+import { t, pickLocalized } from '../../../localization/translations';
 import { Badge, Button, Card } from '../../../components/ui';
 
 interface QuizResultsProps {
@@ -44,7 +44,11 @@ export function QuizResults({
       {/* Top Header */}
       <div className="w-full max-w-sm py-2 text-center border-b-2 border-line pb-3">
         <h1 className="text-xl font-black text-ink">
-          {language !== 'ar' ? 'Quiz Results' : 'نتائج الاختبار'}
+          {pickLocalized(language, {
+            en: 'Quiz Results',
+            ar: 'نتائج الاختبار',
+            ku: 'Encamên Pirsnameyê',
+          })}
         </h1>
       </div>
 
@@ -77,10 +81,24 @@ export function QuizResults({
 
         <div className="space-y-1">
           <h2 className="text-2xl font-black text-ink font-display">
-            {accuracyPercent >= 80 ? (language !== 'ar' ? 'Serkeftin! Well done!' : 'سەركەفتن! أحسنت!') : (language !== 'ar' ? 'Good effort — keep going!' : 'جهد طيب — واصل!')}
+            {accuracyPercent >= 80
+              ? pickLocalized(language, {
+                  en: 'Serkeftin! Well done!',
+                  ar: 'سەركەفتن! أحسنت!',
+                  ku: 'Serkeftin! Aferîn!',
+                })
+              : pickLocalized(language, {
+                  en: 'Good effort — keep going!',
+                  ar: 'جهد طيب — واصل!',
+                  ku: 'Hewldanek baş — berdewam bike!',
+                })}
           </h2>
           <p className="text-muted font-bold text-xs">
-            {language !== 'ar' ? 'You completed the quiz successfully' : 'لقد أكملت الاختبار بنجاح'}
+            {pickLocalized(language, {
+              en: 'You completed the quiz successfully',
+              ar: 'لقد أكملت الاختبار بنجاح',
+              ku: 'Te pirsname bi serkeftî qedand',
+            })}
           </p>
         </div>
 
@@ -88,17 +106,23 @@ export function QuizResults({
         <div className="grid grid-cols-3 gap-2.5 w-full pt-2">
           <Card padding="sm" elevation="flat" className="flex flex-col items-center">
             <span className="text-lg font-black text-ink">{total}</span>
-            <span className="text-[10px] font-bold text-muted mt-0.5">{language !== 'ar' ? 'Total' : 'عدد الأسئلة'}</span>
+            <span className="text-[10px] font-bold text-muted mt-0.5">
+              {pickLocalized(language, { en: 'Total', ar: 'عدد الأسئلة', ku: 'Giştî' })}
+            </span>
           </Card>
 
           <Card padding="sm" elevation="flat" className="flex flex-col items-center">
             <span className="text-lg font-black text-success">{score}</span>
-            <span className="text-[10px] font-bold text-muted mt-0.5">{language !== 'ar' ? 'Correct' : 'إجابات صحيحة'}</span>
+            <span className="text-[10px] font-bold text-muted mt-0.5">
+              {pickLocalized(language, { en: 'Correct', ar: 'إجابات صحيحة', ku: 'Rast' })}
+            </span>
           </Card>
 
           <Card padding="sm" elevation="flat" className="flex flex-col items-center">
             <span className="text-lg font-black text-danger">{missedCount}</span>
-            <span className="text-[10px] font-bold text-muted mt-0.5">{language !== 'ar' ? 'Errors' : 'أخطاء'}</span>
+            <span className="text-[10px] font-bold text-muted mt-0.5">
+              {pickLocalized(language, { en: 'Errors', ar: 'أخطاء', ku: 'Şaşî' })}
+            </span>
           </Card>
         </div>
 
@@ -129,12 +153,20 @@ export function QuizResults({
           trailingIcon={<ArrowRight className="w-5 h-5 rtl:rotate-180" />}
         >
           {hasMissedQuestions
-            ? (language !== 'ar' ? 'Review Answers' : 'مراجعة الإجابات')
+            ? pickLocalized(language, {
+                en: 'Review Answers',
+                ar: 'مراجعة الإجابات',
+                ku: 'Bersivan Binêre',
+              })
             : t(language, 'continue')}
         </Button>
 
         <Button variant="secondary" fullWidth onClick={onHome}>
-          {language !== 'ar' ? 'Back to Home' : 'العودة للرئيسية'}
+          {pickLocalized(language, {
+            en: 'Back to Home',
+            ar: 'العودة للرئيسية',
+            ku: 'Vegere Destpêkê',
+          })}
         </Button>
       </div>
     </div>

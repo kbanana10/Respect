@@ -80,7 +80,7 @@ vi.mock('../src/components/LetterDemo', async () => {
   const R = await import('react');
   return { default: () => R.createElement('div', { 'data-testid': 'letter-demo' }) };
 });
-vi.mock('../src/components/AudioButton', async () => {
+vi.mock('../src/features/audio/components/AudioButton', async () => {
   const R = await import('react');
   return { AudioButton: () => R.createElement('button', null, 'Listen') };
 });

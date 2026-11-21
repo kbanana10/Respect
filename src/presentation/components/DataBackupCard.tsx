@@ -17,24 +17,7 @@ import { getUserErrorMessage } from '../../core/errors/AppError';
 import { PWAInstallButton } from './PWAInstallButton';
 import type { Language } from '../../models/user';
 
-const LABELS: Record<
-  Language,
-  {
-    sectionTitle: string;
-    offlineReady: string;
-    onlineLabel: string;
-    offlineLabel: string;
-    syncNow: string;
-    syncing: string;
-    exportBtn: string;
-    importBtn: string;
-    exportSuccess: string;
-    importSuccess: string;
-    syncDone: string;
-    schemaLabel: string;
-    pendingLabel: string;
-  }
-> = {
+const LABELS = {
   en: {
     sectionTitle: 'Storage, Sync & Backup',
     offlineReady: 'Offline-first local storage active',
@@ -80,7 +63,7 @@ const LABELS: Record<
     schemaLabel: 'Şema',
     pendingLabel: 'Li bendê',
   },
-};
+} satisfies Record<Language, Record<string, string>>;
 
 export const DataBackupCard: React.FC = () => {
   const { user, language, theme, importBackupData } = useAuth();
@@ -118,7 +101,7 @@ export const DataBackupCard: React.FC = () => {
       URL.revokeObjectURL(url);
       setFeedback({ kind: 'ok', text: strings.exportSuccess });
     } catch (err) {
-      setFeedback({ kind: 'err', text: getUserErrorMessage(err, language) });
+      setFeedback({ kind: 'err', text: getUserErrorMessage(err instanceof Error ? err : String(err), language) });
     } finally {
       setBusy(false);
     }
@@ -138,7 +121,7 @@ export const DataBackupCard: React.FC = () => {
       setDiag(await offlineStorage.getDiagnostics());
       setFeedback({ kind: 'ok', text: strings.importSuccess });
     } catch (err) {
-      setFeedback({ kind: 'err', text: getUserErrorMessage(err, language) });
+      setFeedback({ kind: 'err', text: getUserErrorMessage(err instanceof Error ? err : String(err), language) });
     } finally {
       setBusy(false);
     }
@@ -152,7 +135,7 @@ export const DataBackupCard: React.FC = () => {
       setDiag(await offlineStorage.getDiagnostics());
       setFeedback({ kind: 'ok', text: strings.syncDone });
     } catch (err) {
-      setFeedback({ kind: 'err', text: getUserErrorMessage(err, language) });
+      setFeedback({ kind: 'err', text: getUserErrorMessage(err instanceof Error ? err : String(err), language) });
     } finally {
       setBusy(false);
     }

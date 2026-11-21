@@ -23,9 +23,9 @@
  *   - `direction` is the end the pen travels TOWARD (arrow/dot marker target).
  */
 
-export type StrokeDirection = 'start' | 'end';
+type StrokeDirection = 'start' | 'end';
 
-export interface GuideStroke {
+interface GuideStroke {
   /** 0-based draw order (kept explicit even though array order implies it). */
   order: number;
   /** 'M x y L x y …' in glyph-bbox-normalised (0..1) coordinates. */

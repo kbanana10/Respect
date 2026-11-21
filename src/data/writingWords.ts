@@ -6,7 +6,7 @@
  * Meanings are translations only — they are not audio keys or route ids.
  */
 
-export interface WritingWord {
+interface WritingWord {
   id: string;
   en: string;
   ar: string;

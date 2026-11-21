@@ -149,6 +149,7 @@ let audioCtx: AudioContext | null = null;
 
 function getAudioContext() {
   if (!audioCtx) {
+    // SAFETY: Legacy Safari exposes `webkitAudioContext` on the global Window when standard AudioContext is absent.
     const AudioContextCtor =
       window.AudioContext ||
       (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;

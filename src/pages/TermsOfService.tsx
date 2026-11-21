@@ -4,48 +4,60 @@
  * Production-ready Terms of Service design, complete with licensing, usage limits, and Kurdish Quest rules.
  */
 import React from 'react';
-import { useNavigate } from 'react-router';
-import { ArrowLeft, Landmark, MessageSquare, AlertTriangle, HelpCircle } from 'lucide-react';
-import { useAuth } from '../lib/AuthContext';
+import { Landmark, MessageSquare, AlertTriangle, HelpCircle } from 'lucide-react';
+import { useAuth } from '../store/AuthContext';
+import { pickLocalized } from '../localization/translations';
 
 export function TermsOfService() {
-  const navigate = useNavigate();
   const { language } = useAuth();
 
-  const labels = {
+  const labels = pickLocalized(language, {
     en: {
       title: "Terms of Service",
       subtitle: "Last Updated: June 2026",
       desc: "By launching Kurdish Quest, you agree to comply with the rules of usage specified below. Please read carefully to understand user account limits and copyrights.",
       agreement: "1. Acceptance of Terms",
-      agreementBody: "Our Kurdish syllabus and custom generated voice clips are provided purely for academic, language education, and non-commercial usage. Any massive scraping or automated bot requests will lead to absolute IP blacklisting.",
+      agreementBody: "Our Kurdish syllabus and audio drills are provided for academic, language education, and non-commercial personal learning. Automated bulk scraping without authorization is prohibited.",
       gamified: "2. Gamification and Fair Play",
-      gamifiedBody: "Experience Points (XP), levels, badges, and streaks are hosted variables. Any manipulation of local storage hashes or cheat techniques to gain ranks on the global scoreboard is highly discouraged.",
-      monetization: "3. Subscriptions & Advertisements",
-      monetizationBody: "All advertisements are powered by AdMob. Users must not utilize ad-blockers or software to hijack the normal flow of reward videos; doing so breaks the ecosystem that funds this community server.",
+      gamifiedBody: "Experience Points (XP), levels, badges, and streaks reflect real study effort. Manipulation of local progress to game rankings is discouraged.",
+      monetization: "3. Ad-Free Kids Mode & Adult Support",
+      monetizationBody: "Kids Mode is completely ad-free. Optional non-intrusive ads may appear in Adults Mode to help sustain free learning resources.",
       liability: "4. Disclaimers of Accuracy",
-      liabilityBody: "While we make absolute efforts to provide standard, high-accuracy Kurmanji translations paired with professional voice synthesis, dialect nuances can vary by city/region in Kurdistan. Use feedback forms for corrections.",
+      liabilityBody: "While we strive to provide accurate standard Kurmanji translations and pronunciation, regional dialect nuances naturally vary across Kurdistan. We welcome community feedback.",
       contact: "Have Questions?",
-      contactBody: "For corporate licensing, educational partnerships or syllabus error reports, write to support@kurdishquest.com",
-      back: "Dashboard"
+      contactBody: "For educational partnerships or syllabus error reports, write to support@kurdishquest.com",
     },
     ar: {
       title: "شروط الخدمة",
       subtitle: "آخر تحديث: يونيو 2026",
-      desc: "من خلال تشغيل تطبيق كويستر الكرمانجي، فإنك توافق على الالتزام بالقواعد البسيطة التالية. تفضل بقراءة البنود للحفاظ على سلامة بيئتنا التعليمية.",
+      desc: "من خلال تشغيل تطبيق كويست الكرمانجية، فإنك توافق على الالتزام بالقواعد البسيطة التالية. تفضل بقراءة البنود للحفاظ على سلامة بيئتنا التعليمية.",
       agreement: "١. استخدام المنهج والترجمة",
-      agreementBody: "تقدم المواد الصوتية والترجمات المتوفرة فقط لصالح التعليم الفردي وتطوير مهارات الكلام. يُمنع منعاً باتاً استخراج المحتوى البرمجي آلياً بدون ترخيص رسمي.",
-      gamified: "٢. النزاهة في لوحة المتصدرين",
-      gamifiedBody: "تعتمد نقاط المنافسة (XP) ومستويات التقدم على النزاهة الأكاديمية. يُحظر تزييف بيانات المتصدرين للحفاظ على دقة المنافسة وصحتها.",
-      monetization: "٣. الإعلانات والشراكات",
-      monetizationBody: "تقدم الإعلانات بواسطة غوغل لتوفير تمويل ذاتي للفرقة الهندسية. تواجدك بالخدمة يعني قبولك بعرض الفيديوهات التعليمية المدعومة.",
+      agreementBody: "تقدم المواد الصوتية والترجمات المتوفرة فقط لصالح التعليم الفردي وتطوير مهارات الكلام. يُمنع استخراج المحتوى البرمجي آلياً بدون ترخيص رسمي.",
+      gamified: "٢. النزاهة في التعلم ولوحة المتصدرين",
+      gamifiedBody: "تعتمد نقاط الخبرة (XP) ومستويات التقدم على الجهد الحقيقي. يُحظر التلاعب ببيانات الترتيب للحفاظ على عدالة المنافسة.",
+      monetization: "٣. وضع الأطفال المجاني والإعلانات",
+      monetizationBody: "وضع الأطفال خالٍ تماماً من الإعلانات. قد تظهر إعلانات خفيفة اختيارية في وضع الكبار لدعم استمرار المنهج المجاني.",
       liability: "٤. حدود المسؤولية الأكاديمية",
-      liabilityBody: "اللهجة الكرمانجية الكردية غنية بالتنوع المحلي الممتد بين ديار بكر وأربيل والقامشلي. قد تجد اختيارات طفيفة تختلف بحسب الإقليم؛ نرحب دائماً بملاحظاتك لتعديلها.",
+      liabilityBody: "اللهجة الكرمانجية غنية بالتنوع المحلي الممتد عبر مناطق متعددة. قد تجد اختيارات طفيفة تختلف بحسب الإقليم؛ نرحب دائماً بملاحظاتك لتعديلها.",
       contact: "هل لديك سؤال؟",
-      contactBody: "إذا كنت تريد ترخيص المنهج للمدارس أو المعاهد الحكومية، تفضل بمراسلتنا: support@kurdishquest.com",
-      back: "الرئيسية"
-    }
-  }[language !== 'ar' ? 'en' : 'ar'];
+      contactBody: "إذا كنت تريد ترخيص المنهج للمدارس أو المعاهد، تفضل بمراسلتنا: support@kurdishquest.com",
+    },
+    ku: {
+      title: "Mercên Xizmetê",
+      subtitle: "Nûkirina Dawî: Hezîran 2026",
+      desc: "Bi bikaranîna Kurdish Quest re, tu van mercên hêsan ên jêrîn qebûl dikî.",
+      agreement: "1. Bikaranîna Bernameya Fêrbûnê",
+      agreementBody: "Materyalên dengî û wergerên me ji bo fêrbûna kesane û perwerdeyê ne. Kopîkirina otomatîk bê destûr qedexe ye.",
+      gamified: "2. Lîstika Dadperwer",
+      gamifiedBody: "Xalên XP, ast û zincîr hewldana te ya rastîn nîşan didin. Ji kerema xwe bi dadperwerî fêr bibe.",
+      monetization: "3. Moda Zarokan a Bê-Reklam",
+      monetizationBody: "Moda Zarokan bi tevahî bê-reklam e. Di Moda Mezinan de dibe ku reklamên sivik ji bo piştgiriya projeyê hebin.",
+      liability: "4. Cihêrengiya Devokan",
+      liabilityBody: "Kurmancî xwedî dewlemendiyeke herêmî ye. Dibe ku hinek peyv li gorî herêman cihê bin; em her dem pêşniyarên te pêşwazî dikin.",
+      contact: "Pirseke te heye?",
+      contactBody: "Ji bo hevkariya perwerdeyê yan raporkirina şaşiyan: support@kurdishquest.com",
+    },
+  });
 
   return (
     <div className="p-5 max-w-md mx-auto bg-slate-50 dark:bg-slate-950 min-h-screen pb-24 text-slate-800 dark:text-slate-200 select-none">

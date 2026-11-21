@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { WRITING_SENTENCES } from '../data/writingSentences';
 import { motion } from 'motion/react';
 import { NotebookPen, Sparkles, Check, MessageSquareText } from 'lucide-react';
 import type { ReviewDeck } from '../services/SpacedRepetitionService';
 import { SUBJECT_ACCENTS } from '../constants/subjectAccents';
+import { pickLocalized } from '../localization/translations';
 
 const ACCENT = SUBJECT_ACCENTS.writing;
 
@@ -18,8 +19,6 @@ const ACCENT = SUBJECT_ACCENTS.writing;
 export function WritingSentences() {
   const navigate = useNavigate();
   const { language, userData } = useAuth();
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
 
   const deck: ReviewDeck = userData?.reviewDeck ?? {};
   const isLearned = (id: string): boolean => {
@@ -41,17 +40,17 @@ export function WritingSentences() {
         <div className="space-y-2 relative z-10 text-start">
           <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 w-max ${ACCENT.well} ${ACCENT.icon}`}>
             <Sparkles className="w-3.5 h-3.5" />
-            {isKu ? 'HEVOK' : isAr ? 'جُمَل' : 'SENTENCES'}
+            {pickLocalized(language, { ku: 'HEVOK', ar: 'جُمَل', en: 'SENTENCES' })}
           </span>
           <h3 className="text-2xl font-black mt-2 leading-tight tracking-tight text-ink">
-            {isKu ? 'Hevok' : isAr ? 'جُمَل' : 'Sentences'}
+            {pickLocalized(language, { ku: 'Hevok', ar: 'جُمَل', en: 'Sentences' })}
           </h3>
           <p className="text-muted text-[11px] leading-relaxed font-semibold">
-            {isKu
-              ? 'Hevoka temam bikişîne — her peyv ji bo xwe tê kontrolkirin.'
-              : isAr
-                ? 'اكتب الجملة كاملة — تُفحص كل كلمة على حدة.'
-                : 'Trace the whole sentence — every word is checked on its own.'}
+            {pickLocalized(language, {
+              ku: 'Hevoka temam bikişîne — her peyv ji bo xwe tê kontrolkirin.',
+              ar: 'اكتب الجملة كاملة — تُفحص كل كلمة على حدة.',
+              en: 'Trace the whole sentence — every word is checked on its own.',
+            })}
           </p>
         </div>
       </div>
@@ -59,10 +58,18 @@ export function WritingSentences() {
       {/* Progress line */}
       <div className="flex items-center justify-between mb-3 px-1">
         <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-          {isKu ? `${WRITING_SENTENCES.length} Hevok` : isAr ? `${WRITING_SENTENCES.length} جُمل` : `${WRITING_SENTENCES.length} Sentences`}
+          {pickLocalized(language, {
+            ku: `${WRITING_SENTENCES.length} Hevok`,
+            ar: `${WRITING_SENTENCES.length} جُمل`,
+            en: `${WRITING_SENTENCES.length} Sentences`,
+          })}
         </h3>
         <span className="text-[10px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full uppercase">
-          {isKu ? `${learnedCount} hîn bûye` : isAr ? `${learnedCount} مكتوبة` : `${learnedCount} learned`}
+          {pickLocalized(language, {
+            ku: `${learnedCount} hîn bûye`,
+            ar: `${learnedCount} مكتوبة`,
+            en: `${learnedCount} learned`,
+          })}
         </span>
       </div>
 
@@ -71,6 +78,10 @@ export function WritingSentences() {
       <div className="pb-4 space-y-2">
         {WRITING_SENTENCES.map((sentence, index) => {
           const done = isLearned(sentence.id);
+          const meaning = pickLocalized(language, { en: sentence.en, ar: sentence.ar, ku: sentence.en });
+          const doneSuffix = done
+            ? pickLocalized(language, { en: ', written', ar: '، مكتوبة', ku: ', nivîsandî' })
+            : '';
           return (
             <motion.button
               key={sentence.id}
@@ -80,7 +91,7 @@ export function WritingSentences() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.04, duration: 0.3 }}
               onClick={() => navigate(`/writing/sentences/${sentence.id}`)}
-              aria-label={`${sentence.ku} — ${isAr ? sentence.ar : sentence.en}${done ? (isAr ? '، مكتوبة' : ', written') : ''}`}
+              aria-label={`${sentence.ku} — ${meaning}${doneSuffix}`}
               className={`w-full flex items-center gap-3 rounded-2xl p-3.5 transition-all relative cursor-pointer select-none text-start min-h-[56px]
                 ${done
                   ? 'border-2 border-emerald-400/70 dark:border-emerald-500/60 bg-emerald-50 dark:bg-emerald-950/50'
@@ -94,7 +105,7 @@ export function WritingSentences() {
                   {sentence.ku}
                 </span>
                 <span className={`block text-[11px] font-semibold leading-snug ${done ? 'text-emerald-600/80 dark:text-emerald-400/80' : 'text-muted'}`}>
-                  {isAr ? sentence.ar : sentence.en}
+                  {meaning}
                 </span>
               </span>
               {done && (

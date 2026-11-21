@@ -35,7 +35,7 @@
 /** Length of one side of the tracing surface AND the offscreen mask canvases. */
 export const TRACE_CANVAS = 320;
 /** Only strokes whose falloff alpha meets this bar count as "ink". */
-export const STROKE_ALPHA_THRESHOLD = 64;
+const STROKE_ALPHA_THRESHOLD = 64;
 /**
  * Distance tolerance (analysis px, i.e. 3/4 of a device px) for counting a
  * target pixel as covered: the learner's thin stroke is dilated by this radius
@@ -52,7 +52,7 @@ export const COVERAGE_TOLERANCE_PX = 4;
  * width of a stroke hugging the guide's edge, plus the tolerance halo) pass
  * without counting legitimately stray scribbles as clean.
  */
-export const BOUNDS_TOLERANCE_PX = 2;
+const BOUNDS_TOLERANCE_PX = 2;
 /**
  * Erosion depth for the dev-mode perfect-trace self-test: it synthesises a
  * thin (~5px) centerline that, WITHOUT the coverage tolerance, would fall
@@ -61,7 +61,7 @@ export const BOUNDS_TOLERANCE_PX = 2;
  * same trace reaches ~88%+ (at 4px: I 72.7 / E 72.7 / O 83.7 / M 77.3 /
  * W 77.6, all zones ≥40%) and passes.
  */
-export const SELF_TEST_PERFECT_TRACE_ERODE = 9;
+const SELF_TEST_PERFECT_TRACE_ERODE = 9;
 
 /** Minimum per-zone coverage (fraction of the zone's glyph pixels covered). */
 export const ZONE_COVERAGE_MIN = 0.4;
@@ -88,21 +88,21 @@ export const ZONE_COVERAGE_MIN = 0.4;
  * mean), RUSHED unchanged (28/31 pass, ≥75% threshold holds); E/H minus their
  * bar still FAIL (bar cells ~0% < floor); perfect-trace self-test still passes.
  */
-export const ZONE_COVERAGE_FLOOR = 0.2;
-export const ZONE_COVERAGE_MEAN_MIN = 0.6;
+const ZONE_COVERAGE_FLOOR = 0.2;
+const ZONE_COVERAGE_MEAN_MIN = 0.6;
 /** Minimum overall glyph coverage required to pass. */
 export const OVERALL_COVERAGE_MIN = 0.6;
 /** Maximum fraction of ink allowed outside the glyph (within the region). */
 export const OUT_OF_BOUNDS_MAX = 0.3;
 /** Default zone grid dimension (3 → a 3×3 grid of 9 zones). */
-export const ZONE_GRID = 3;
+const ZONE_GRID = 3;
 /** Coarsen the grid when a cell would drop below this many pixels. */
-export const ZONE_MIN_DIMENSION = 4;
+const ZONE_MIN_DIMENSION = 4;
 /** Skip zones with fewer glyph pixels than this (noise-proofing). */
-export const ZONE_MIN_PIXELS = 20;
+const ZONE_MIN_PIXELS = 20;
 
 /** How many rows × columns to split a glyph's bounding box into. */
-export interface ZoneGridConfig {
+interface ZoneGridConfig {
   rows: number;
   cols: number;
 }
@@ -179,13 +179,13 @@ export interface TraceBox {
 export const SINGLE_BOX: TraceBox = { left: 0.09, top: 0.09, right: 0.91, bottom: 0.91 };
 
 /** The whole surface — used as a fallback target/region. */
-export const FULL_BOX: TraceBox = { left: 0, top: 0, right: 1, bottom: 1 };
+const FULL_BOX: TraceBox = { left: 0, top: 0, right: 1, bottom: 1 };
 
 /** Why a trace failed — the UI maps this to a plain-language hint. */
-export type TraceFailureReason = 'coverage' | 'bounds' | 'zone' | 'empty';
+type TraceFailureReason = 'coverage' | 'bounds' | 'zone' | 'empty';
 
 /** Per-zone evaluation result. */
-export interface TraceZone {
+interface TraceZone {
   row: number;
   col: number;
   /** Glyph pixels that live in this zone. */
@@ -273,7 +273,7 @@ export function emptyTraceResult(): TraceResult {
  * and offscreen mask). Sharing it guarantees the evaluation samples the exact
  * same letter shape the learner sees.
  */
-export function glyphFontForBox(box: TraceBox): string {
+function glyphFontForBox(box: TraceBox): string {
   const w = Math.max(0, box.right - box.left);
   const h = Math.max(0, box.bottom - box.top);
   const px = Math.max(8, Math.round(TRACE_CANVAS * Math.min(w, h) * 0.88));
@@ -304,7 +304,7 @@ export function drawGlyphInBox(
  * mask geometry can never drift from what the learner sees (same font, same
  * weight, same baseline, same box).
  */
-export function renderGlyph(
+function renderGlyph(
   glyph: string,
   box: TraceBox = FULL_BOX,
   fillStyle = '#000000',
@@ -321,7 +321,7 @@ export function renderGlyph(
 }
 
 /** Count set pixels in a boolean mask (diagnostics / self-test). */
-export function countMaskPixels(mask: Uint8ClampedArray, value = 1): number {
+function countMaskPixels(mask: Uint8ClampedArray, value = 1): number {
   let count = 0;
   for (let i = 0; i < mask.length; i += 1) {
     if (mask[i] === value) count += 1;

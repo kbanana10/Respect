@@ -14,29 +14,29 @@ import { useOnlineStatus } from '../platform';
 import { motion, AnimatePresence } from 'motion/react';
 import type { Language } from '../models/user';
 
-const COPY: Record<
-  Language,
-  { offline: string; syncing: (n: number) => string; backOnline: string; merged: string }
-> = {
+const COPY = {
   en: {
     offline: 'Offline Mode — Saved locally',
-    syncing: (n) => `Syncing (${n})...`,
+    syncing: (n: number) => `Syncing (${n})...`,
     backOnline: 'Back Online',
     merged: 'Progress synced across devices',
   },
   ar: {
     offline: 'وضع بدون إنترنت — الحفظ محلي',
-    syncing: (n) => `جاري المزامنة (${n})...`,
+    syncing: (n: number) => `جاري المزامنة (${n})...`,
     backOnline: 'تمت استعادة الاتصال',
     merged: 'تمت مزامنة التقدم بنجاح',
   },
   ku: {
     offline: 'Bê înternet — Li cîhazê tê tomarkirin',
-    syncing: (n) => `Hevdengkirin (${n})...`,
+    syncing: (n: number) => `Hevdengkirin (${n})...`,
     backOnline: 'Înternet vegeriya',
     merged: 'Pêşveçûn hate hevdengkirin',
   },
-};
+} satisfies Record<
+  Language,
+  { offline: string; syncing: (n: number) => string; backOnline: string; merged: string }
+>;
 
 export function NetworkStatusBadge() {
   const { language } = useAuth();

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../lib/AuthContext';
-import { AudioButton } from '../../components/AudioButton';
+import { useAuth } from '../../store/AuthContext';
+import { AudioButton } from '../../features/audio/components/AudioButton';
 import type { GrammarExercise } from '../../data/grammar/types';
 import { OptionChip, ContinueButton, ResultNote } from './ExerciseChrome';
 import { pickLocalized } from '../../lib/grammar/grammarPresentation';
@@ -18,7 +18,6 @@ interface ListenChooseExerciseProps {
  */
 export function ListenChooseExercise({ exercise, checked, onCheck, onNext }: ListenChooseExerciseProps) {
   const { language } = useAuth();
-  const isAr = language === 'ar';
   const [pending, setPending] = useState<string | null>(null);
   const submitted = checked !== null;
   const correct = checked === true;
@@ -67,8 +66,12 @@ export function ListenChooseExercise({ exercise, checked, onCheck, onNext }: Lis
           correct={correct}
           answerText={exercise.correctAnswer}
           answerIsKurdish
-          headline={correct ? (isAr ? 'صحيح!' : 'Correct!') : isAr ? 'خطأ' : 'Incorrect'}
-          answerLabel={isAr ? 'الإجابة الصحيحة هي:' : 'Correct answer is:'}
+          headline={
+            correct
+              ? pickLocalized({ ar: 'صحيح!', ku: 'Rast!', en: 'Correct!' }, language)
+              : pickLocalized({ ar: 'خطأ', ku: 'Şaş', en: 'Incorrect' }, language)
+          }
+          answerLabel={pickLocalized({ ar: 'الإجابة الصحيحة هي:', ku: 'Bersiva rast ev e:', en: 'Correct answer is:' }, language)}
         />
       )}
 
@@ -81,7 +84,9 @@ export function ListenChooseExercise({ exercise, checked, onCheck, onNext }: Lis
       )}
 
       <div className="mt-auto">
-        {submitted && <ContinueButton onClick={onNext} label={isAr ? 'متابعة' : 'Continue'} />}
+        {submitted && (
+          <ContinueButton onClick={onNext} label={pickLocalized({ ar: 'متابعة', ku: 'Bidomîne', en: 'Continue' }, language)} />
+        )}
       </div>
     </div>
   );

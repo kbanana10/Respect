@@ -15,17 +15,7 @@ interface PWAInstallButtonProps {
   className?: string;
 }
 
-const COPY: Record<
-  Language,
-  {
-    installApp: string;
-    installIOS: string;
-    iosTitle: string;
-    iosStep1: string;
-    iosStep2: string;
-    close: string;
-  }
-> = {
+const COPY = {
   en: {
     installApp: 'Install App',
     installIOS: 'Add to Home Screen',
@@ -50,7 +40,7 @@ const COPY: Record<
     iosStep2: 'Biçe xwarê û "Add to Home Screen" hilbijêre.',
     close: 'Bigire',
   },
-};
+} satisfies Record<Language, Record<string, string>>;
 
 export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   compact = false,

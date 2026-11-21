@@ -10,6 +10,7 @@ import { LessonWord } from '../../../data/learningPath';
 import { AudioButton } from '../../audio/components/AudioButton';
 import { Button, Card, Switch } from '../../../components/ui';
 import { getIconByName } from '../../../components/vocabulary/wordIcons';
+import { pickLocalized } from '../../../localization/translations';
 
 interface QuizStudyPhaseProps {
   language: Language;
@@ -44,13 +45,21 @@ export function QuizStudyPhase({
           variant="secondary"
           size="sm"
           onClick={onExit}
-          aria-label={language !== 'ar' ? 'Exit lesson' : 'إنهاء الدرس'}
+          aria-label={pickLocalized(language, {
+            en: 'Exit lesson',
+            ar: 'إنهاء الدرس',
+            ku: 'Ji waneyê derkeve',
+          })}
           className="shrink-0 !px-0 w-11 rounded-full"
         >
           <X className="w-5 h-5" />
         </Button>
         <h1 className="text-lg font-black flex-1 text-center text-ink truncate">
-          {language !== 'ar' ? 'Phase 1: Explore & Learn' : 'المرحلة الأولى: دراسة مفردات الوحدة'}
+          {pickLocalized(language, {
+            en: 'Phase 1: Explore & Learn',
+            ar: 'المرحلة الأولى: دراسة مفردات الوحدة',
+            ku: 'Qonaxa 1: Fêr bibe û bibîne',
+          })}
         </h1>
         {/* Spacer keeps the title optically centred without a fixed `me-10`. */}
         <span className="w-11 shrink-0" aria-hidden="true" />
@@ -63,7 +72,11 @@ export function QuizStudyPhase({
         </div>
         <div className="min-w-0">
           <span className="text-[10px] font-black text-brand uppercase tracking-wider block mb-0.5">
-            {language !== 'ar' ? "LET'S ENRICH SENSES" : 'ادرس وانطق الكلمات لتثبيتها'}
+            {pickLocalized(language, {
+              en: "LET'S ENRICH SENSES",
+              ar: 'ادرس وانطق الكلمات لتثبيتها',
+              ku: 'PEYVAN GUHDARÎ BIKE Û FÊR BIBE',
+            })}
           </span>
           <h2 className="text-lg font-black text-ink truncate">{catName}</h2>
         </div>
@@ -78,12 +91,22 @@ export function QuizStudyPhase({
             ) : (
               <Rabbit className="w-4 h-4 text-brand shrink-0" />
             )}
-            <span className="truncate">{language !== 'ar' ? 'Slow Speaker' : 'تحدث بطيء'}</span>
+            <span className="truncate">
+              {pickLocalized(language, {
+                en: 'Slow Speaker',
+                ar: 'تحدث بطيء',
+                ku: 'Dengê Hêdî',
+              })}
+            </span>
           </span>
           <Switch
             checked={useSlowPronunciation}
             onChange={onToggleSlow}
-            label={language !== 'ar' ? 'Slow pronunciation' : 'النطق البطيء'}
+            label={pickLocalized(language, {
+              en: 'Slow pronunciation',
+              ar: 'النطق البطيء',
+              ku: 'Bilêvkirina hêdî',
+            })}
           />
         </Card>
 
@@ -94,13 +117,23 @@ export function QuizStudyPhase({
             ) : (
               <Volume2 className="w-4 h-4 text-success shrink-0" />
             )}
-            <span className="truncate">{language !== 'ar' ? 'Mute' : 'كتم الصوت'}</span>
+            <span className="truncate">
+              {pickLocalized(language, {
+                en: 'Mute',
+                ar: 'كتم الصوت',
+                ku: 'Bêdeng',
+              })}
+            </span>
           </span>
           <Switch
             checked={isMuted}
             onChange={onToggleMute}
             tone="warning"
-            label={language !== 'ar' ? 'Mute audio' : 'كتم الصوت'}
+            label={pickLocalized(language, {
+              en: 'Mute audio',
+              ar: 'كتم الصوت',
+              ku: 'Deng bigire',
+            })}
           />
         </Card>
       </div>
@@ -123,7 +156,7 @@ export function QuizStudyPhase({
                   <bdi>{word.ku}</bdi>
                 </h4>
                 <p className="text-muted text-xs font-bold mt-1 truncate">
-                  {language !== 'ar' ? word.en : word.ar}
+                  {pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en })}
                 </p>
               </div>
             </div>
@@ -148,7 +181,11 @@ export function QuizStudyPhase({
           onClick={onStart}
           trailingIcon={<ChevronRight className="w-4 h-4 rtl:rotate-180" />}
         >
-          {language !== 'ar' ? "Let's Play Random Quiz!" : 'الآن اختبر مهاراتي في التحدي!'}
+          {pickLocalized(language, {
+            en: "Let's Play Random Quiz!",
+            ar: 'الآن اختبر مهاراتي في التحدي!',
+            ku: 'Werin em pirsnameyê bilîzin!',
+          })}
         </Button>
       </div>
     </div>

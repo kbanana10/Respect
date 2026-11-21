@@ -3,11 +3,12 @@ import React, { useState, useMemo, useEffect } from 'react';
 /** Rows rendered per page in the dictionary list. */
 const PAGE_SIZE = 25;
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { useFavorites } from '../hooks/useFavorites';
 import { searchVocabulary } from '../data/adapters/contentAdapter';
 import { VocabularyLemma } from '../data/schemas/contentSchemas';
-import { AudioButton } from '../components/AudioButton';
+import { pickLocalized } from '../localization/translations';
+import { AudioButton } from '../features/audio/components/AudioButton';
 import { 
   Search as SearchIcon, Heart, Clock, X, Briefcase, Zap, Compass, Apple, Flame, Users, BookOpen, GraduationCap, 
   Laptop, Palette, Lightbulb, Trophy, Sparkles, Star, Settings, Key, Globe, Network, HardDrive, Cpu, Database, Binary, 
@@ -330,10 +331,18 @@ export function Search() {
       <div className="flex items-center justify-between py-2">
         <div>
           <h2 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
-            {language !== 'ar' ? 'Ferheng — the Dictionary' : 'فەرهەنگ — القاموس'}
+            {pickLocalized(language, {
+              en: 'Ferheng — the Dictionary',
+              ar: 'فەرهەنگ — القاموس',
+              ku: 'Ferheng — Peyvname',
+            })}
           </h2>
           <p className="text-xs text-slate-400">
-            {language !== 'ar' ? 'Every Kurmanji word — with sound, level and examples' : 'كل كلمة كورمانجية — بالنطق والمستوى والأمثلة'}
+            {pickLocalized(language, {
+              en: 'Every Kurmanji word — with sound, level and examples',
+              ar: 'كل كلمة كورمانجية — بالنطق والمستوى والأمثلة',
+              ku: 'Her peyva Kurmancî — bi deng, ast û mînakan',
+            })}
           </p>
         </div>
       </div>
@@ -347,7 +356,11 @@ export function Search() {
           <input
             type="text"
             className="w-full bg-slate-50 border-2 border-slate-100 dark:bg-slate-950 dark:border-slate-800 rounded-2xl py-3.5 shadow-sm focus:border-indigo-400 focus:outline-none focus:bg-white transition-all ps-11 pe-11 font-bold text-slate-800 dark:text-white"
-            placeholder={language !== 'ar' ? 'Try “av”, “water” or “ماء”…' : 'جرّب «av» أو «ماء»…'}
+            placeholder={pickLocalized(language, {
+              en: 'Try “av”, “water” or “ماء”…',
+              ar: 'جرّب «av» أو «ماء»…',
+              ku: '“av”, “water” an “ماء” biceribîne…',
+            })}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -424,7 +437,7 @@ export function Search() {
                 <div className="flex items-center gap-1.5 mb-2.5 px-2">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
                   <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                    {language === 'ku' ? 'Lêgerînên Dawî' : language !== 'ar' ? 'Recent Queries' : 'عمليات البحث الأخيرة'}
+                    {pickLocalized(language, { en: 'Recent Queries', ar: 'عمليات البحث الأخيرة', ku: 'Lêgerînên Dawî' })}
                   </h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -447,14 +460,14 @@ export function Search() {
                 <SearchIcon className="w-8 h-8" />
               </div>
               <h3 className="text-base font-black text-slate-900 dark:text-white mb-1">
-                {language === 'ku' ? 'Li ferhengê bigere' : language !== 'ar' ? 'Search the ferheng' : 'ابحث في القاموس'}
+                {pickLocalized(language, { en: 'Search the ferheng', ar: 'ابحث في القاموس', ku: 'Li ferhengê bigere' })}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
-                {language === 'ku'
-                  ? 'Ji bo dîtina peyvan, her peyvek bi Kurmancî, Îngilîzî yan Erebî binivîse.'
-                  : language !== 'ar'
-                  ? 'Type a word in Kurmanji, English or Arabic — its sound, level and examples appear here.'
-                  : 'اكتب أي كلمة بالكورمانجية أو معناها بالعربية والإنجليزية للبحث في كافة القاموس.'}
+                {pickLocalized(language, {
+                  en: 'Type a word in Kurmanji, English or Arabic — its sound, level and examples appear here.',
+                  ar: 'اكتب أي كلمة بالكورمانجية أو معناها بالعربية والإنجليزية للبحث في كافة القاموس.',
+                  ku: 'Ji bo dîtina peyvan, her peyvek bi Kurmancî, Îngilîzî yan Erebî binivîse.',
+                })}
               </p>
             </div>
           </div>
@@ -493,15 +506,10 @@ export function Search() {
                       </div>
 
                       <p className="text-xs font-bold text-slate-600 dark:text-slate-300 mt-1">
-                        <bdi>{language !== 'ar' ? item.translations.en : item.translations.ar}</bdi>
+                        <bdi>{pickLocalized(language, { en: item.translations.en, ar: item.translations.ar, ku: item.translations.en })}</bdi>
                         {item.translations.en !== item.translations.ar && (
                           <span className="text-slate-400 ms-2 font-normal">
-                            {/* BiDi AUDIT FIX: the secondary gloss is opposite-script
-                                (Arabic inside LTR UIs, English inside the RTL UI).
-                                Without isolation the parentheses flipped sides and the
-                                run reordered around them. <bdi> keeps the whole
-                                "(gloss)" group a sealed directional island. */}
-                            <bdi>({language !== 'ar' ? item.translations.ar : item.translations.en})</bdi>
+                            <bdi>({pickLocalized(language, { en: item.translations.ar, ar: item.translations.en, ku: item.translations.ar })})</bdi>
                           </span>
                         )}
                       </p>
@@ -515,7 +523,11 @@ export function Search() {
                     <button
                       type="button"
                       onClick={() => toggleFavorite(item.id)}
-                      aria-label={language !== 'ar' ? (isFav ? 'Remove from favorites' : 'Add to favorites') : (isFav ? 'إزالة من المفضلة' : 'أضف إلى المفضلة')}
+                      aria-label={
+                        isFav
+                          ? pickLocalized(language, { en: 'Remove from favorites', ar: 'إزالة من المفضلة', ku: 'Ji bijarteyan rake' })
+                          : pickLocalized(language, { en: 'Add to favorites', ar: 'أضف إلى المفضلة', ku: 'Li bijarteyan zêde bike' })
+                      }
                       aria-pressed={isFav}
                       className={`p-3 rounded-xl border-none cursor-pointer transition-all ${
                         isFav 
@@ -535,7 +547,11 @@ export function Search() {
                       "{item.examples[0].sentenceKu}"
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {language !== 'ar' ? item.examples[0].translations.en : item.examples[0].translations.ar}
+                      {pickLocalized(language, {
+                        en: item.examples[0].translations.en,
+                        ar: item.examples[0].translations.ar,
+                        ku: item.examples[0].translations.en,
+                      })}
                     </p>
                   </div>
                 )}
@@ -549,16 +565,22 @@ export function Search() {
               onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
               className="w-full py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-indigo-600 dark:text-indigo-400 font-extrabold text-sm hover:border-indigo-300 active:scale-[0.99] transition-all cursor-pointer"
             >
-              {language !== 'ar'
-                ? `Show more (${allResults.length - results.length} remaining)`
-                : `عرض المزيد (${allResults.length - results.length} متبقية)`}
+              {pickLocalized(language, {
+                en: `Show more (${allResults.length - results.length} remaining)`,
+                ar: `عرض المزيد (${allResults.length - results.length} متبقية)`,
+                ku: `Bêtir nîşan bide (${allResults.length - results.length} maye)`,
+              })}
             </button>
           )}
 
           {results.length === 0 && (query.trim() || activeCefr !== 'All' || activePartOfSpeech !== 'All') && (
             <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800">
               <p className="text-sm font-bold text-slate-500 dark:text-slate-400">
-                {language !== 'ar' ? 'No words match your search — try a shorter spelling.' : 'لا توجد كلمات مطابقة — جرّب كتابة أقصر.'}
+                {pickLocalized(language, {
+                  en: 'No words match your search — try a shorter spelling.',
+                  ar: 'لا توجد كلمات مطابقة — جرّب كتابة أقصر.',
+                  ku: 'Tu peyv nehatin dîtin — nivîsandineke kurttir biceribîne.',
+                })}
               </p>
             </div>
           )}

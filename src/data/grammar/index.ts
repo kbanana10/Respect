@@ -12,11 +12,6 @@ import { nounsLesson } from './nouns';
 import { sentenceStructureLesson } from './sentenceStructure';
 import { prepositionsLesson } from './prepositions';
 
-export { pronounsLesson } from './pronouns';
-export { verbsLesson } from './verbs';
-export { nounsLesson } from './nouns';
-export { sentenceStructureLesson } from './sentenceStructure';
-export { prepositionsLesson } from './prepositions';
 export * from './types';
 
 /** Ordered exactly as the hub renders the cards. */

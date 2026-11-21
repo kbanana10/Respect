@@ -2,7 +2,7 @@ import React from 'react';
 import { ShieldCheck, X, Check, ArrowRight, Lightbulb } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Question } from '../hooks/useQuizEngine';
-import { t } from '../../../lib/translations';
+import { t, pickLocalized } from '../../../localization/translations';
 import { Language } from '../../../models/user';
 
 interface SentenceReorderQuestionProps {
@@ -41,10 +41,18 @@ export function SentenceReorderQuestion({
           </div>
           <div>
             <span className="text-[10px] font-black tracking-wider text-indigo-500 uppercase block mb-1">
-              {language !== 'ar' ? 'Translate Sentence:' : 'ترجم الجملة المقترحة للغة الكوردية:'}
+              {pickLocalized(language, {
+                en: 'Translate Sentence:',
+                ar: 'ترجم الجملة المقترحة للغة الكوردية:',
+                ku: 'Hevokê wergerîne Kurdî:',
+              })}
             </span>
             <p className="text-[15px] font-bold text-slate-800 dark:text-slate-100">
-              "{language !== 'ar' ? (currentQ.hintEn || currentQ.hintAr) : currentQ.hintAr}"
+              "{pickLocalized(language, {
+                en: currentQ.hintEn || currentQ.hintAr || '',
+                ar: currentQ.hintAr || '',
+                ku: currentQ.hintEn || currentQ.hintAr || '',
+              })}"
             </p>
           </div>
         </div>
@@ -53,7 +61,11 @@ export function SentenceReorderQuestion({
         <div className="p-5 min-h-[80px] bg-white border-2 border-dashed border-purple-100 dark:border-slate-800 dark:bg-slate-900 rounded-3xl flex flex-wrap gap-2 items-center justify-center shadow-inner">
           {selectedBlockIndices.length === 0 ? (
             <span className="text-slate-400 text-xs font-bold animate-pulse text-center">
-              {language !== 'ar' ? 'Select words below to construct the translation:' : 'اضغط على الكلمات بالترتيب الصحيح لتشكيل الجملة الكوردية'}
+              {pickLocalized(language, {
+                en: 'Select words below to construct the translation:',
+                ar: 'اضغط على الكلمات بالترتيب الصحيح لتشكيل الجملة الكوردية',
+                ku: 'Li peyvên jêrîn bikirtîne da ku hevokê ava bikî:',
+              })}
             </span>
           ) : (
             selectedBlockIndices.map((idx, i) => (
@@ -108,7 +120,11 @@ export function SentenceReorderQuestion({
               }}
               className="min-h-[44px] px-3 py-2 text-xs font-black text-purple-600 dark:text-purple-400 hover:underline cursor-pointer bg-transparent border-none focus-visible:ring-2 focus-visible:ring-indigo-600 rounded-lg"
             >
-              {language !== 'ar' ? 'Reset Order ↺' : 'إعادة ترتيب الكلمات ↺'}
+              {pickLocalized(language, {
+                en: 'Reset Order ↺',
+                ar: 'إعادة ترتيب الكلمات ↺',
+                ku: 'Rêzê nû bike ↺',
+              })}
             </button>
           </div>
         )}

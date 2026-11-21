@@ -22,11 +22,13 @@ export default [
   {
     ignores: [
       "dist/**",
+      "dev-dist/**",
       // Storybook build output: minified vendor bundles carrying foreign
       // eslint directives — never a lint target (rebuildable artifact).
       "storybook-static/**",
       "node_modules/**",
       "android/**",
+      "ios/**",
       "app/**",
       "public/**",
       "scripts/**",

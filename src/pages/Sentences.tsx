@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useAuth } from '../lib/AuthContext';
-import { t } from '../lib/translations';
-import { AudioButton } from '../components/AudioButton';
+import { useAuth } from '../store/AuthContext';
+import { pickLocalized } from '../localization/translations';
+import { AudioButton } from '../features/audio/components/AudioButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, 
@@ -266,19 +266,19 @@ export function Sentences() {
               navigate('/');
             }
           }} 
-          aria-label={language !== 'ar' ? 'Back' : 'رجوع'} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shadow-2xs"
-          title={language !== 'ar' ? 'Back' : 'رجوع'}
+          aria-label={pickLocalized(language, { en: 'Back', ar: 'رجوع', ku: 'Vegere' })} className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shadow-2xs"
+          title={pickLocalized(language, { en: 'Back', ar: 'رجوع', ku: 'Vegere' })}
         >
           <ArrowLeft className="w-5 h-5 text-slate-600 dark:text-slate-400 rtl:-scale-x-100" />
         </button>
         )}
         <div>
           <h2 className="text-xl font-black text-slate-900 dark:text-white leading-none">
-            {language !== 'ar' ? 'Conversational Phrases' : 'جمل ومحادثات ومقالات'}
+            {pickLocalized(language, { en: 'Conversational Phrases', ar: 'جمل ومحادثات ومقالات', ku: 'Hevok û Gotûbêj' })}
           </h2>
           <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-black uppercase tracking-wider mt-1.5 flex items-center gap-1">
             <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
-            {language !== 'ar' ? 'Speak like a local' : 'تحدث كأهل اللغة'}
+            {pickLocalized(language, { en: 'Speak like a local', ar: 'تحدث كأهل اللغة', ku: 'Wek xwecihî biaxive' })}
           </p>
         </div>
       </div>
@@ -300,15 +300,17 @@ export function Sentences() {
               <div className="space-y-2 relative z-10 text-start">
                 <span className="text-[9px] bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 w-max">
                   <Sparkles className="w-3.5 h-3.5 text-[#FFB300] fill-[#FFB300]/40 animate-pulse" />
-                  {language !== 'ar' ? 'PHRASEOLOGY PLAYGROUND' : 'منصة تركيب الجمل والمحادثات'}
+                  {pickLocalized(language, { en: 'PHRASEOLOGY PLAYGROUND', ar: 'منصة تركيب الجمل والمحادثات', ku: 'QADA HEVOKAN' })}
                 </span>
                 <h3 className="text-xl font-black mt-2 leading-tight tracking-tight text-ink">
-                  {language !== 'ar' ? 'Natural Kurmanji Dialogues' : 'تحدث الكورمانجية بطلاقة تامة'}
+                  {pickLocalized(language, { en: 'Natural Kurmanji Dialogues', ar: 'تحدث الكورمانجية بطلاقة تامة', ku: 'Gotûbêjên Kurmancî yên Xwezayî' })}
                 </h3>
                 <p className="text-muted text-[11px] leading-relaxed font-semibold">
-                  {language !== 'ar' 
-                    ? 'Embark on everyday conversational chunks, filter routines, practice paragraph reading, or model immersive characters in dialogue scenarios.' 
-                    : 'استعرض جمل الاستخدام اليومي الهامة، التحيات الصباحية والمسائية، مقالات تعليمية للقراءة بفقرات قابلة للتحليل، ومحاكاة محادثات حية واقعية.'}
+                  {pickLocalized(language, {
+                    en: 'Embark on everyday conversational chunks, filter routines, practice paragraph reading, or model immersive characters in dialogue scenarios.',
+                    ar: 'استعرض جمل الاستخدام اليومي الهامة، التحيات الصباحية والمسائية، مقالات تعليمية للقراءة بفقرات قابلة للتحليل، ومحاكاة محادثات حية واقعية.',
+                    ku: 'Hevokên rojane, silavên sibeh û êvarê, nivîsên xwendinê û diyalogên zindî biceribîne.',
+                  })}
                 </p>
               </div>
             </div>
@@ -324,7 +326,7 @@ export function Sentences() {
                 }`}
               >
                 <BookOpen className="w-4 h-4" />
-                <span>{language !== 'ar' ? 'Everyday' : 'يومي'}</span>
+                <span>{pickLocalized(language, { en: 'Everyday', ar: 'يومي', ku: 'Rojane' })}</span>
               </button>
 
               <button
@@ -336,7 +338,7 @@ export function Sentences() {
                 }`}
               >
                 <Clock className="w-4 h-4" />
-                <span>{language !== 'ar' ? 'Timings' : 'أوقات'}</span>
+                <span>{pickLocalized(language, { en: 'Timings', ar: 'أوقات', ku: 'Dem' })}</span>
               </button>
 
               <button
@@ -348,7 +350,7 @@ export function Sentences() {
                 }`}
               >
                 <Compass className="w-4 h-4" />
-                <span>{language !== 'ar' ? 'Reading' : 'قصص وقراءة'}</span>
+                <span>{pickLocalized(language, { en: 'Reading', ar: 'قصص وقراءة', ku: 'Xwendin' })}</span>
               </button>
 
               <button
@@ -360,7 +362,7 @@ export function Sentences() {
                 }`}
               >
                 <MessageSquare className="w-4 h-4" />
-                <span>{language !== 'ar' ? 'Dialogues' : 'محادثات'}</span>
+                <span>{pickLocalized(language, { en: 'Dialogues', ar: 'محادثات', ku: 'Diyalog' })}</span>
               </button>
             </div>
 
@@ -372,10 +374,10 @@ export function Sentences() {
                 <div className="flex items-center justify-between px-1">
                   <h4 className="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider flex items-center gap-1">
                     <BookOpen className="w-3.5 h-3.5" />
-                    {language !== 'ar' ? 'CORE DAILY PHRASES' : 'جمل الاستخدام الضرورية طوال اليوم'}
+                    {pickLocalized(language, { en: 'CORE DAILY PHRASES', ar: 'جمل الاستخدام الضرورية طوال اليوم', ku: 'HEVOKÊN ROJANE YÊN BINGEHÎN' })}
                   </h4>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded-lg">
-                    {everydayPhrases.length} {language !== 'ar' ? 'Phrases' : 'جملة'}
+                    {everydayPhrases.length} {pickLocalized(language, { en: 'Phrases', ar: 'جملة', ku: 'Hevok' })}
                   </span>
                 </div>
 
@@ -401,7 +403,7 @@ export function Sentences() {
                                 <bdi>{phrase.ku}</bdi>
                               </h5>
                               <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
-                                <bdi>{language !== 'ar' ? phrase.en : phrase.ar}</bdi>
+                                <bdi>{pickLocalized(language, { en: phrase.en, ar: phrase.ar, ku: phrase.en })}</bdi>
                               </p>
                             </div>
                           </div>
@@ -452,7 +454,7 @@ export function Sentences() {
                     }`}
                   >
                     <Sun className="w-3.5 h-3.5 text-amber-500" />
-                    <span>{language !== 'ar' ? 'Morning' : 'تحيات الصباح'}</span>
+                    <span>{pickLocalized(language, { en: 'Morning', ar: 'تحيات الصباح', ku: 'Sibeh' })}</span>
                   </button>
 
                   <button
@@ -464,7 +466,7 @@ export function Sentences() {
                     }`}
                   >
                     <Moon className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>{language !== 'ar' ? 'Evening' : 'المساء والليل'}</span>
+                    <span>{pickLocalized(language, { en: 'Evening', ar: 'المساء والليل', ku: 'Êvar û Şev' })}</span>
                   </button>
 
                   <button
@@ -476,7 +478,7 @@ export function Sentences() {
                     }`}
                   >
                     <PartyPopper className="w-3.5 h-3.5 text-purple-500" />
-                    <span>{language !== 'ar' ? 'Occasions' : 'المناسبات بالأعياد'}</span>
+                    <span>{pickLocalized(language, { en: 'Occasions', ar: 'المناسبات والأعياد', ku: 'Cejn û Boneyên Taybet' })}</span>
                   </button>
                 </div>
 
@@ -505,7 +507,7 @@ export function Sentences() {
                                   <bdi>{item.ku}</bdi>
                                 </h5>
                                 <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
-                                  <bdi>{language !== 'ar' ? item.en : item.ar}</bdi>
+                                  <bdi>{pickLocalized(language, { en: item.en, ar: item.ar, ku: item.en })}</bdi>
                                 </p>
                               </div>
                             </div>
@@ -539,7 +541,7 @@ export function Sentences() {
                 <div className="flex items-center gap-1.5 px-1">
                   <Compass className="w-4 h-4 text-purple-600" />
                   <h4 className="text-xs font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider">
-                    {language !== 'ar' ? 'READING PRACTICE PASSAGES' : 'نصوص وقصص كاملة للتدريب على القراءة'}
+                    {pickLocalized(language, { en: 'READING PRACTICE PASSAGES', ar: 'نصوص وقصص كاملة للتدريب على القراءة', ku: 'NIVÎSÊN PRATÎKA XWENDINÊ' })}
                   </h4>
                 </div>
 
@@ -564,10 +566,10 @@ export function Sentences() {
                           </div>
                           <div>
                             <span className="text-[9px] bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                              {language !== 'ar' ? 'PASSAGE READER' : 'نص قراءة وتفسير'}
+                              {pickLocalized(language, { en: 'PASSAGE READER', ar: 'نص قراءة وتفسير', ku: 'XWENDINA NIVÎSÊ' })}
                             </span>
                             <h5 className="text-base font-black text-slate-900 dark:text-white mt-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                              {language !== 'ar' ? passage.titleEn : passage.titleAr}
+                              {pickLocalized(language, { en: passage.titleEn, ar: passage.titleAr, ku: passage.titleKu })}
                             </h5>
                             <p className="text-xs text-slate-400 dark:text-slate-500 font-bold italic mt-0.5">
                               "{passage.titleKu}"
@@ -576,7 +578,7 @@ export function Sentences() {
                         </div>
 
                         <div className="p-2 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-full group-hover:bg-purple-50 transition-colors">
-                          <ChevronRight className="w-5 h-5 text-purple-500" />
+                          <ChevronRight className="w-5 h-5 text-purple-500 rtl:-scale-x-100" />
                         </div>
                       </div>
 
@@ -587,9 +589,9 @@ export function Sentences() {
                       </div>
 
                       <div className="mt-3.5 flex items-center justify-between text-[11px] font-extrabold text-purple-600">
-                        <span>{passage.sentences.length} {language !== 'ar' ? 'interactive chunks' : 'جمل تدريب تفاعلية'}</span>
+                        <span>{passage.sentences.length} {pickLocalized(language, { en: 'interactive chunks', ar: 'جمل تدريب تفاعلية', ku: 'hevokên çalak' })}</span>
                         <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                          {language !== 'ar' ? 'Start Reading' : 'ابدأ ممارسة القراءة'} &rarr;
+                          {pickLocalized(language, { en: 'Start Reading', ar: 'ابدأ ممارسة القراءة', ku: 'Dest bi xwendinê bike' })} &rarr;
                         </span>
                       </div>
                     </motion.div>
@@ -604,7 +606,7 @@ export function Sentences() {
                 <div className="flex items-center gap-1.5 px-1">
                   <MessageSquare className="w-4 h-4 text-purple-600" />
                   <h4 className="text-xs font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider">
-                    {language !== 'ar' ? 'IMMERSED CHARACTER CONVERSATIONS' : 'المحادثات التفاعلية والسيناريوهات الحلقية'}
+                    {pickLocalized(language, { en: 'IMMERSED CHARACTER CONVERSATIONS', ar: 'المحادثات التفاعلية والسيناريوهات الحلقية', ku: 'GOTÛBÊJÊN ZINDÎ' })}
                   </h4>
                 </div>
 
@@ -630,11 +632,11 @@ export function Sentences() {
                           <div>
                             <div className="flex items-center gap-1.5">
                               <span className="text-[9px] bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-extrabold px-2 py-0.5 rounded uppercase tracking-wider">
-                                {language !== 'ar' ? 'MULTI-CHARACTER' : 'تعدد شخصيات'}
+                                {pickLocalized(language, { en: 'MULTI-CHARACTER', ar: 'تعدد شخصيات', ku: 'PÎR-KESAYETÎ' })}
                               </span>
                             </div>
                             <h5 className="text-base font-black text-slate-900 dark:text-white mt-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                              {language !== 'ar' ? scenario.titleEn : scenario.titleAr}
+                              {pickLocalized(language, { en: scenario.titleEn, ar: scenario.titleAr, ku: scenario.titleKu })}
                             </h5>
                             <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500">
                               "{scenario.titleKu}"
@@ -643,12 +645,12 @@ export function Sentences() {
                         </div>
 
                         <div className="p-2 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-full group-hover:bg-purple-50 transition-colors">
-                          <ChevronRight className="w-5 h-5 text-purple-500" />
+                          <ChevronRight className="w-5 h-5 text-purple-500 rtl:-scale-x-100" />
                         </div>
                       </div>
 
                       <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                        {language !== 'ar' ? scenario.descriptionEn : scenario.descriptionAr}
+                        {pickLocalized(language, { en: scenario.descriptionEn, ar: scenario.descriptionAr, ku: scenario.descriptionKu })}
                       </p>
 
                       <div className="mt-4 pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between text-[11px] font-black">
@@ -660,7 +662,7 @@ export function Sentences() {
                           ))}
                         </div>
                         <span className="text-purple-600 hover:underline">
-                          {language !== 'ar' ? 'Open Dialogue Scenario' : 'ابدأ تشغيل المحادثة'} &rarr;
+                          {pickLocalized(language, { en: 'Open Dialogue Scenario', ar: 'ابدأ تشغيل المحادثة', ku: 'Diyalogê veke' })} &rarr;
                         </span>
                       </div>
                     </motion.div>
@@ -686,10 +688,10 @@ export function Sentences() {
                 <span className="text-5xl shrink-0 drop-shadow-md">{selectedPassage.icon}</span>
                 <div>
                   <span className="text-[10px] bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-black px-2.5 py-1 rounded-md uppercase tracking-wider">
-                    {language !== 'ar' ? 'PRACTICE MODULE' : 'دراسة وتدريب لغوي'}
+                    {pickLocalized(language, { en: 'PRACTICE MODULE', ar: 'دراسة وتدريب لغوي', ku: 'MODULA PRATÎKÊ' })}
                   </span>
                   <h3 className="text-lg font-black text-slate-900 dark:text-white mt-1">
-                    {language !== 'ar' ? selectedPassage.titleEn : selectedPassage.titleAr}
+                    {pickLocalized(language, { en: selectedPassage.titleEn, ar: selectedPassage.titleAr, ku: selectedPassage.titleKu })}
                   </h3>
                   <p className="text-xs text-slate-400 dark:text-slate-500 font-bold italic">
                     "{selectedPassage.titleKu}"
@@ -699,12 +701,15 @@ export function Sentences() {
 
               {/* Full Original Kurdish Text reading display */}
               <div className="mt-5 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-slate-950/60 dark:to-slate-950/40 border border-indigo-100/50 dark:border-slate-800/80 p-5 rounded-[22px] leading-relaxed relative">
-                <h4 className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-2">Original Text • النص الأصلي للفقرة</h4>
+                <h4 className="text-[10px] font-black text-indigo-500 dark:text-indigo-400 uppercase tracking-wider mb-2">
+                  {pickLocalized(language, { en: 'Original Text', ar: 'النص الأصلي للفقرة', ku: 'Nivîsa Resen' })}
+                </h4>
                 <p className="text-base font-black text-slate-900 dark:text-white leading-loose tracking-wide">
                   <bdi>{selectedPassage.fullKu}</bdi>
                 </p>
                 <div className="mt-3.5 pt-3 border-t border-indigo-100/60 dark:border-indigo-950/40 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  <strong>Arabic:</strong> {selectedPassage.fullAr}
+                  <strong>{pickLocalized(language, { en: 'Translation:', ar: 'الترجمة:', ku: 'Werger:' })}</strong>{' '}
+                  {pickLocalized(language, { en: selectedPassage.fullEn, ar: selectedPassage.fullAr, ku: selectedPassage.fullEn })}
                 </div>
               </div>
             </div>
@@ -712,7 +717,7 @@ export function Sentences() {
             {/* Line-by-line detailed practice analysis */}
             <div className="space-y-4">
               <h4 className="text-xs font-black uppercase text-slate-400 dark:text-slate-500 tracking-wider px-1">
-                {language !== 'ar' ? 'LINE-BY-LINE ANALYSIS' : 'تحليل النص وتقسيمه جملة بعد جملة ورقة مفردات'}
+                {pickLocalized(language, { en: 'LINE-BY-LINE ANALYSIS', ar: 'تحليل النص جملة بعد جملة', ku: 'ŞÎROVEKIRINA HEVOK BI HEVOK' })}
               </h4>
 
               <div className="space-y-3">
@@ -757,7 +762,7 @@ export function Sentences() {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 space-y-3.5">
               <h4 className="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400 tracking-wider flex items-center gap-1">
                 <Sparkles className="w-4 h-4" />
-                {language !== 'ar' ? 'CURATED VOCABULARY IN PASSAGE' : 'مفردات هامة مستخرجة من النص'}
+                {pickLocalized(language, { en: 'CURATED VOCABULARY IN PASSAGE', ar: 'مفردات هامة مستخرجة من النص', ku: 'PEYVÊN GIRÎNG DI NIVÎSÊ DE' })}
               </h4>
               
               <div className="grid grid-cols-2 gap-3">
@@ -775,7 +780,7 @@ export function Sentences() {
               onClick={() => setSelectedPassage(null)}
               className="py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-black text-sm rounded-[20px] w-full shadow-lg shadow-indigo-600/10 hover:shadow-indigo-700/20 active:scale-98 transition-all border-none"
             >
-              {language !== 'ar' ? 'Keep Learning • Back to Chapters' : 'إتمام القراءة والرجوع للأقسام'}
+              {pickLocalized(language, { en: 'Keep Learning • Back to Chapters', ar: 'إتمام القراءة والرجوع للأقسام', ku: 'Bidomîne • Vegere Beşan' })}
             </button>
           </motion.div>
         )}
@@ -793,14 +798,14 @@ export function Sentences() {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[32px] p-5 shadow-xs flex items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 flex items-center justify-center text-3xl shrink-0 shadow-inner">
-                  {selectedScenario.icon}
+                  {renderSentencesIcon(selectedScenario.icon, "w-6 h-6 text-purple-600 dark:text-purple-400")}
                 </div>
                 <div>
                   <span className="text-[9px] bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 font-extrabold px-2 py-0.5 rounded tracking-wider uppercase">
-                    DIALOGUE SCENARIO
+                    {pickLocalized(language, { en: 'DIALOGUE SCENARIO', ar: 'سيناريو محادثة', ku: 'SENARYOYA DIYALOGÊ' })}
                   </span>
                   <h3 className="text-base font-black text-slate-900 dark:text-white mt-0.5">
-                    {language !== 'ar' ? selectedScenario.titleEn : selectedScenario.titleAr}
+                    {pickLocalized(language, { en: selectedScenario.titleEn, ar: selectedScenario.titleAr, ku: selectedScenario.titleKu })}
                   </h3>
                   <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 truncate max-w-[240px] md:max-w-xs">
                     "{selectedScenario.titleKu}"
@@ -812,7 +817,7 @@ export function Sentences() {
                 onClick={() => setSelectedScenario(null)}
                 className="py-1.5 px-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-200 font-black rounded-xl text-xs border-none cursor-pointer"
               >
-                {language !== 'ar' ? 'Close' : 'إغلاق'}
+                {pickLocalized(language, { en: 'Close', ar: 'إغلاق', ku: 'Bigire' })}
               </button>
             </div>
 
@@ -891,12 +896,14 @@ export function Sentences() {
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 space-y-3">
               <h4 className="text-xs font-black uppercase text-purple-600 dark:text-purple-400 tracking-wider flex items-center gap-1">
                 <Sparkles className="w-4 h-4" />
-                {language !== 'ar' ? 'CONVERSATION METHODOLOGY KEYS' : 'مفاتيح التفاعل والطلاقة اللغوية'}
+                {pickLocalized(language, { en: 'CONVERSATION METHODOLOGY KEYS', ar: 'مفاتيح التفاعل والطلاقة اللغوية', ku: 'MIFTEYÊN AXAFTINÊ' })}
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                {language !== 'ar' 
-                  ? 'Tap the audio button inside each dialogue turn to capture accents, model tone matching, and study the context of Kurdish honorifics like "ser seran û ser çavan" (with great honor).' 
-                  : 'اضغط على رمز الصوت داخل أي فقرة حوارية للتعرف على اللحن الصوتي ومخارج الكلمات، كرر العبارات مع تغيير الضمائر لزيادة ثقتك بالتحدث مباشرة.'}
+                {pickLocalized(language, {
+                  en: 'Tap the audio button inside each dialogue turn to capture accents, model tone matching, and study the context of Kurdish honorifics like "ser seran û ser çavan" (with great honor).',
+                  ar: 'اضغط على رمز الصوت داخل أي فقرة حوارية للتعرف على اللحن الصوتي ومخارج الكلمات، كرر العبارات مع تغيير الضمائر لزيادة ثقتك بالتحدث مباشرة.',
+                  ku: 'Li bişkoka dengî ya her hevokê bixe da ku bilêvkirinê bibihîzî û bi bawerî dubare bikî.',
+                })}
               </p>
             </div>
 
@@ -905,7 +912,7 @@ export function Sentences() {
               onClick={() => setSelectedScenario(null)}
               className="py-4 bg-gradient-to-r from-purple-600 to-indigo-700 text-white font-black text-sm rounded-[20px] w-full shadow-lg shadow-purple-600/10 hover:shadow-purple-700/20 active:scale-97 transition-all border-none"
             >
-              {language !== 'ar' ? 'Finish Conversation Study' : 'إنهاء دراسة المحادثة والعودة'}
+              {pickLocalized(language, { en: 'Finish Conversation Study', ar: 'إنهاء دراسة المحادثة والعودة', ku: 'Xwendina Diyalogê Biqedîne' })}
             </button>
           </motion.div>
         )}

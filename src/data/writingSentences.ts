@@ -8,7 +8,7 @@
  * engine used for letters and words.
  */
 
-export interface WritingSentence {
+interface WritingSentence {
   id: string;
   en: string;
   ar: string;

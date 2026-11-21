@@ -63,7 +63,7 @@ export interface GlyphPixelBounds {
 }
 
 /** Why a path trace failed — the UI maps this to a plain-language hint. */
-export type PathFailureReason =
+type PathFailureReason =
   | 'empty'
   | 'stroke-count'
   | 'order'
@@ -98,20 +98,20 @@ export interface PathTraceResult {
 /** Arc-length resampling parameter (points per curve). */
 const RESAMPLE_N = 96;
 /** Max mmd (mean min-distance) between ink stroke i and its slot, else wrong slot. */
-export const ORDER_TOLERANCE_PX = 35;
+const ORDER_TOLERANCE_PX = 35;
 /** Max directed discrete-Fréchet distance between an ink stroke and its path. */
-export const PATH_TOLERANCE_PX = 30;
+const PATH_TOLERANCE_PX = 30;
 /** A learner's consecutive strokes must touch within this when their authored
     counterparts touch (the '~15 px' junction tolerance). */
-export const CONNECTION_TOLERANCE_PX = 15;
+const CONNECTION_TOLERANCE_PX = 15;
 /** Authored strokes closer than this are considered physically joined. */
-export const AUTH_TOUCH_PX = 6;
+const AUTH_TOUCH_PX = 6;
 /** Minimum fraction of each authored stroke that ink must lie within tolerance of. */
-export const COVERAGE_MIN = 0.7;
+const COVERAGE_MIN = 0.7;
 /** A point counts as "on" the authored path within this distance. */
-export const COVERAGE_TOLERANCE_PX = 20;
+const COVERAGE_TOLERANCE_PX = 20;
 /** Ink farther than this from its expected path is painted red (deviation). */
-export const RED_TOLERANCE_PX = 14;
+const RED_TOLERANCE_PX = 14;
 /** Authored strokes with less ink coverage than this are reported "missing". */
 const MISSING_COVERAGE_FLOOR = 0.25;
 
@@ -504,7 +504,7 @@ export function validateStrokeTrace(
  * ------------------------------------------------------------------ */
 
 /** Tolerance (analysis px) for a stroke's start/end dots in guided mode. */
-export const STROKE_DOT_TOLERANCE_PX = 30;
+const STROKE_DOT_TOLERANCE_PX = 30;
 
 /** Per-stroke verdict for the guided "trace each stroke" flow. */
 export interface LessonStrokeEval {
@@ -523,7 +523,7 @@ export interface LessonStrokeEval {
 }
 
 /** Weighted sub-scores behind a 0..100 trace score. */
-export interface TraceScoreBreakdown {
+interface TraceScoreBreakdown {
   /** 0..1 — how many strokes travelled the authored direction. */
   direction: number;
   /** 0..1 — mean proximity of ink to the authored path. */
@@ -555,8 +555,8 @@ export function scoreBand(score: number): ScoreBand {
   return 'retry';
 }
 
-/** Start dot tolerance for the guided flow (exported for the canvas). */
-export const TRACE_SCORE_FLOOR_PX = 30;
+/** Start dot tolerance for the guided flow. */
+const TRACE_SCORE_FLOOR_PX = 30;
 
 /** Evaluate ONE learner stroke against ONE authored stroke (guided mode). */
 export function evaluateLessonStroke(

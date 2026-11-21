@@ -3,7 +3,7 @@
  *
  * Pure conflict-resolution module shared across Web, Android, and iOS.
  */
-import type { GameScoreMap, UserData, WritingLetterProgress } from '../../models/user';
+import type { GameScoreMap, UserData, WritingProgressMap } from '../../models/user';
 import { calculateLevelFromXP } from '../../services/GamificationService';
 import type { ReviewDeck } from '../../services/SpacedRepetitionService';
 import { CURRENT_USER_SCHEMA_VERSION } from '../schema/migrations';
@@ -39,10 +39,12 @@ export function reconcileUserData(local: UserData, remote: UserData, now: number
   // 2. Grow-only sets (union)
   const mergedLessons = Array.from(new Set([...(local.completedLessons || []), ...(remote.completedLessons || [])]));
   const mergedBadges = Array.from(new Set([...(local.badges || []), ...(remote.badges || [])]));
-  const mergedUnlocked = Array.from(new Set(['A1', ...(local.unlockedLevels || []), ...(remote.unlockedLevels || [])]));
+  const mergedUnlocked = Array.from(new Set(['U0', 'A1', ...(local.unlockedLevels || []), ...(remote.unlockedLevels || [])]));
   const mergedFavorites = Array.from(new Set([...(local.favorites || []), ...(remote.favorites || [])]));
   const mergedWrongAnswers = Array.from(new Set([...(local.wrongAnswersHistory || []), ...(remote.wrongAnswersHistory || [])]));
   const mergedCompletedTours = Array.from(new Set([...(local.completedTours || []), ...(remote.completedTours || [])]));
+  const mergedAvatars = Array.from(new Set(['sun_classic', 'mountain_eagle', ...(local.unlockedAvatars || []), ...(remote.unlockedAvatars || [])]));
+  const mergedStickers = Array.from(new Set([...(local.unlockedStickers || []), ...(remote.unlockedStickers || [])]));
 
   const rawSearches = isLocalNewer
     ? [...(local.recentSearches || []), ...(remote.recentSearches || [])]
@@ -56,7 +58,7 @@ export function reconcileUserData(local: UserData, remote: UserData, now: number
   }
 
   // 4. Writing progress (per-letter max bestScore, max attempts, OR completed)
-  const mergedWriting: Record<string, WritingLetterProgress> = { ...(remote.writingProgress || {}) };
+  const mergedWriting: WritingProgressMap = { ...(remote.writingProgress || {}) };
   for (const [letter, localProg] of Object.entries(local.writingProgress || {})) {
     const remoteProg = mergedWriting[letter];
     if (!remoteProg) {
@@ -150,6 +152,8 @@ export function reconcileUserData(local: UserData, remote: UserData, now: number
     reviewDeck: mergedReviewDeck,
     writingProgress: mergedWriting,
     completedTours: mergedCompletedTours,
+    unlockedAvatars: mergedAvatars,
+    unlockedStickers: mergedStickers,
     streak: mergedStreak,
     streakFreezes: mergedFreezes,
     lastStreakFreezeUsed: mergedLastFreezeUsed,

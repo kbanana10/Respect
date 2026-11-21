@@ -4,6 +4,7 @@ import { learningPath, LessonWord } from '../../../data/learningPath';
 import { Language, UserData } from '../../../models/user';
 import { PracticeWord } from '../../../models/word';
 import { getDueItems } from '../../../services/SpacedRepetitionService';
+import { pickLocalized } from '../../../localization/translations';
 import { Question, QuizMode } from '../types';
 import { toLetterPuzzleAnswer } from './answerUtils';
 
@@ -292,9 +293,11 @@ export function generateQuestionsForModule(
           id: `${l.id}_q${idx}`,
           wordId: l.id,
           word: l,
-          question: language !== 'ar'
-            ? `Which letter does "${l.exampleWord}" (${l.meaningEn}) start with?`
-            : `بأي حرف تبدأ كلمة "${l.exampleWord}" (${l.meaningAr})؟`,
+          question: pickLocalized(language, {
+            en: `Which letter does "${l.exampleWord}" (${l.meaningEn}) start with?`,
+            ar: `بأي حرف تبدأ كلمة "${l.exampleWord}" (${l.meaningAr})؟`,
+            ku: `Peyva "${l.exampleWord}" (${l.meaningEn}) bi kîjan tîpê dest pê dike?`,
+          }),
           correctAnswer: l.char,
           options,
           type: 'multiple_choice' as const,
@@ -311,9 +314,11 @@ export function generateQuestionsForModule(
         id: `${l.id}_q${idx}`,
         wordId: l.id,
         word: l,
-        question: language !== 'ar'
-          ? `Write "${l.meaningEn}" in Kurdish (starts with ${l.char}):`
-          : `اكتب "${l.meaningAr}" باللغة الكوردية (تبدأ بـ ${l.char}):`,
+        question: pickLocalized(language, {
+          en: `Write "${l.meaningEn}" in Kurdish (starts with ${l.char}):`,
+          ar: `اكتب "${l.meaningAr}" باللغة الكوردية (تبدأ بـ ${l.char}):`,
+          ku: `"${l.meaningEn}" bi Kurdî binivîse (bi ${l.char} dest pê dike):`,
+        }),
         correctAnswer: l.exampleWord,
         options: [],
         type: 'translate' as const,
@@ -335,9 +340,11 @@ export function generateQuestionsForModule(
         id: `${l.id}_q${idx}`,
         wordId: l.id,
         word: l,
-        question: language !== 'ar' 
-          ? 'Which letter does this sound represent?' 
-          : 'أي حرف تسمعه الآن؟ (استمع للنطق)',
+        question: pickLocalized(language, {
+          en: 'Which letter does this sound represent?',
+          ar: 'أي حرف تسمعه الآن؟ (استمع للنطق)',
+          ku: 'Ev deng kîjan tîp e? (Guhdarî bike)',
+        }),
         correctAnswer: l.char,
         options,
         type: 'listen' as const,
@@ -398,7 +405,7 @@ export function generateQuestionsForModule(
 
   const levelId = isAdaptive ? getAdaptiveLevelId(userData) : getLevelOfModule(moduleId);
   let maxQuestions = 5;
-  if (levelId === 'A1') maxQuestions = 5;
+  if (levelId === 'U0' || levelId === 'A1') maxQuestions = 5;
   else if (levelId === 'A2') maxQuestions = 7;
   else if (levelId === 'B1') maxQuestions = 8;
   else if (levelId === 'B2') maxQuestions = 10;
@@ -417,9 +424,11 @@ export function generateQuestionsForModule(
         id: `${l.id}_rq${idx}`,
         wordId: l.id,
         word: l,
-        question: language !== 'ar'
-          ? 'Which letter does this sound represent?'
-          : 'أي حرف تسمعه الآن؟ (استمع للنطق)',
+        question: pickLocalized(language, {
+          en: 'Which letter does this sound represent?',
+          ar: 'أي حرف تسمعه الآن؟ (استمع للنطق)',
+          ku: 'Ev deng kîjan tîp e? (Guhdarî bike)',
+        }),
         correctAnswer: l.char,
         options: shuffle([...otherLetters, l.char]),
         type: 'listen' as const,
@@ -504,9 +513,11 @@ export function generateQuestionsForModule(
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
-        question: language !== 'ar'
-          ? 'Which Kurdish word do you hear?'
-          : 'أي كلمة كوردية تسمع؟',
+        question: pickLocalized(language, {
+          en: 'Which Kurdish word do you hear?',
+          ar: 'أي كلمة كوردية تسمع؟',
+          ku: 'Tu kîjan peyva Kurdî dibihîzî?',
+        }),
         correctAnswer: w.ku,
         options,
         type: 'listen' as const,
@@ -515,9 +526,11 @@ export function generateQuestionsForModule(
       };
     }
 
+    const meaningOf = (opt: QuizWordCandidate) =>
+      pickLocalized(language, { en: opt.en, ar: opt.ar, ku: opt.en });
+
     if (qType === 'multiple_choice') {
-      const correctMeaning = language !== 'ar' ? w.en : w.ar;
-      const meaningOf = (opt: QuizWordCandidate) => (language !== 'ar' ? opt.en : opt.ar);
+      const correctMeaning = meaningOf(w);
       const wrongs = pickDistractors(w, poolWords, deduplicatedUniverse, meaningOf, correctMeaning, 3);
       const randomizedOpts = shuffle([...wrongs, correctMeaning]);
 
@@ -525,7 +538,11 @@ export function generateQuestionsForModule(
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
-        question: language !== 'ar' ? `What does "${w.ku}" mean?` : `ما معنى الكلمة الكوردية "${w.ku}"؟`,
+        question: pickLocalized(language, {
+          en: `What does "${w.ku}" mean?`,
+          ar: `ما معنى الكلمة الكوردية "${w.ku}"؟`,
+          ku: `Wateya "${w.ku}" çi ye?`,
+        }),
         correctAnswer: correctMeaning,
         options: randomizedOpts,
         type: 'multiple_choice' as const,
@@ -540,14 +557,16 @@ export function generateQuestionsForModule(
         scrambled.reverse();
       }
 
-      const term = language !== 'ar' ? w.en : w.ar;
+      const term = meaningOf(w);
       return {
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
-        question: language !== 'ar' 
-          ? `Spell the Kurdish word for "${term}":`
-          : `رتّب الأحرف لتهجئة الكلمة الكوردية لـ "${term}":`,
+        question: pickLocalized(language, {
+          en: `Spell the Kurdish word for "${term}":`,
+          ar: `رتّب الأحرف لتهجئة الكلمة الكوردية لـ "${term}":`,
+          ku: `Tîpan rêz bike bo peyva Kurdî ya "${term}":`,
+        }),
         correctAnswer: cleanKu,
         options: [],
         type: 'scrambled_letters' as const,
@@ -589,9 +608,11 @@ export function generateQuestionsForModule(
         wordId: w.id,
         word: w,
         prompt: blankSentence,
-        question: language !== 'ar'
-          ? `Fill in the blank: "${blankSentence}"`
-          : `أكمل الفراغ بالكلمة المناسبة: "${blankSentence}"`,
+        question: pickLocalized(language, {
+          en: `Fill in the blank: "${blankSentence}"`,
+          ar: `أكمل الفراغ بالكلمة المناسبة: "${blankSentence}"`,
+          ku: `Valahiyê dagire: "${blankSentence}"`,
+        }),
         correctAnswer: correctAns,
         options,
         type: 'fill_blank' as const,
@@ -603,29 +624,34 @@ export function generateQuestionsForModule(
       };
     } else if (qType === 'true_false') {
       const isTrueQ = Math.random() > 0.5;
-      let showTranslation = language !== 'ar' ? w.en : w.ar;
+      let showTranslation = meaningOf(w);
       
       if (!isTrueQ) {
         const matches = deduplicatedUniverse.filter(m => m.id !== w.id);
         if (matches.length > 0) {
           const mismatch = matches[Math.floor(Math.random() * matches.length)];
-          showTranslation = language !== 'ar' ? mismatch.en : mismatch.ar;
+          showTranslation = meaningOf(mismatch);
         } else {
-          showTranslation = language !== 'ar' ? 'Water' : 'ماء';
+          showTranslation = pickLocalized(language, { en: 'Water', ar: 'ماء', ku: 'Water' });
         }
       }
 
-      const qText = language !== 'ar'
-        ? `Does "${w.ku}" translate to "${showTranslation}"?`
-        : `هل تترجم كلمة "${w.ku}" إلى "${showTranslation}"؟`;
+      const qText = pickLocalized(language, {
+        en: `Does "${w.ku}" translate to "${showTranslation}"?`,
+        ar: `هل تترجم كلمة "${w.ku}" إلى "${showTranslation}"؟`,
+        ku: `Gelo wateya "${w.ku}" ev e: "${showTranslation}"?`,
+      });
+
+      const trueLabel = pickLocalized(language, { en: 'True', ar: 'صحيح', ku: 'Rast' });
+      const falseLabel = pickLocalized(language, { en: 'False', ar: 'خطأ', ku: 'Çewt' });
 
       return {
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
         question: qText,
-        correctAnswer: isTrueQ ? (language !== 'ar' ? 'True' : 'صحيح') : (language !== 'ar' ? 'False' : 'خطأ'),
-        options: language !== 'ar' ? ['True', 'False'] : ['صحيح', 'خطأ'],
+        correctAnswer: isTrueQ ? trueLabel : falseLabel,
+        options: [trueLabel, falseLabel],
         type: 'true_false' as const,
         audio: w.audio,
         category: itemCategory
@@ -638,9 +664,11 @@ export function generateQuestionsForModule(
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
-        question: language !== 'ar' 
-          ? `Which Kurdish word matches ${itemEmoji}?` 
-          : `أي كلمة كوردية تطابق هذا الرمز التعبيري ${itemEmoji}؟`,
+        question: pickLocalized(language, {
+          en: `Which Kurdish word matches ${itemEmoji}?`,
+          ar: `أي كلمة كوردية تطابق هذا الرمز التعبيري ${itemEmoji}؟`,
+          ku: `Kîjan peyva Kurdî bi ${itemEmoji} re li hev tê?`,
+        }),
         correctAnswer: w.ku,
         options: randomizedOpts,
         type: 'emoji' as const,
@@ -673,9 +701,11 @@ export function generateQuestionsForModule(
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
-        question: language !== 'ar'
-          ? `Translate and organize the Kurdish words for:`
-          : `رتّب الكلمات الكوردية بالشكل الصحيح لتقابل المعنى المقترح:`,
+        question: pickLocalized(language, {
+          en: `Translate and organize the Kurdish words for:`,
+          ar: `رتّب الكلمات الكوردية بالشكل الصحيح لتقابل المعنى المقترح:`,
+          ku: `Peyvên Kurdî bi rêza rast rêz bike:`,
+        }),
         correctAnswer: pureWords.join(' '),
         options: [],
         type: 'sentence_reorder' as const,
@@ -687,14 +717,16 @@ export function generateQuestionsForModule(
         hintEn
       };
     } else {
-      const prompt = language !== 'ar' ? w.en : w.ar;
+      const prompt = meaningOf(w);
       return {
         id: `${w.id}_q${idx}`,
         wordId: w.id,
         word: w,
-        question: language !== 'ar' 
-          ? `Write "${prompt}" in Kurdish:` 
-          : `اكتب "${prompt}" باللغة الكوردية:`,
+        question: pickLocalized(language, {
+          en: `Write "${prompt}" in Kurdish:`,
+          ar: `اكتب "${prompt}" باللغة الكوردية:`,
+          ku: `"${prompt}" bi Kurdî binivîse:`,
+        }),
         correctAnswer: w.ku,
         options: [],
         type: 'translate' as const,

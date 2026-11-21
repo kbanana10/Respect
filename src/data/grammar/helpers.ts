@@ -117,6 +117,3 @@ export function lesson(l: LessonInput): GrammarLesson {
     exercises: l.exercises,
   };
 }
-
-/** Null-object for the unknown-lesson fallback in the page (typed locally). */
-export const EMPTY_LOCALIZED: LocalizedText = { en: '', ar: '', ku: '' };

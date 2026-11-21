@@ -5,14 +5,28 @@
  * storing in the bounded diagnostic ring buffer.
  */
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
-export interface LogEntry {
+type LogMetaValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Error
+  | readonly string[]
+  | { readonly name: string; readonly message: string };
+
+interface LogMeta {
+  readonly [key: string]: LogMetaValue;
+}
+
+interface LogEntry {
   readonly timestamp: number;
   readonly level: LogLevel;
   readonly scope: string;
   readonly message: string;
-  readonly meta?: Record<string, unknown>;
+  readonly meta?: LogMeta;
 }
 
 const SENSITIVE_KEY_PATTERN = /token|secret|password|apikey|api_key|auth|credential|email/i;
@@ -20,9 +34,9 @@ const MAX_BUFFER_SIZE = 100;
 
 const ringBuffer: LogEntry[] = [];
 
-function sanitizeMeta(meta?: Record<string, unknown>): Record<string, unknown> | undefined {
+function sanitizeMeta(meta?: LogMeta): LogMeta | undefined {
   if (!meta) return undefined;
-  const clean: Record<string, unknown> = {};
+  const clean: Record<string, LogMetaValue> = {};
   for (const [key, value] of Object.entries(meta)) {
     if (SENSITIVE_KEY_PATTERN.test(key)) {
       clean[key] = '[REDACTED]';
@@ -43,14 +57,14 @@ function recordEntry(entry: LogEntry): void {
 }
 
 export interface ScopedLogger {
-  debug(message: string, meta?: Record<string, unknown>): void;
-  info(message: string, meta?: Record<string, unknown>): void;
-  warn(message: string, meta?: Record<string, unknown>): void;
-  error(message: string, meta?: Record<string, unknown>): void;
+  debug(message: string, meta?: LogMeta): void;
+  info(message: string, meta?: LogMeta): void;
+  warn(message: string, meta?: LogMeta): void;
+  error(message: string, meta?: LogMeta): void;
 }
 
 export function createLogger(scope: string): ScopedLogger {
-  const emit = (level: LogLevel, message: string, meta?: Record<string, unknown>): void => {
+  const emit = (level: LogLevel, message: string, meta?: LogMeta): void => {
     const cleanMeta = sanitizeMeta(meta);
     const entry: LogEntry = {
       timestamp: Date.now(),
@@ -61,7 +75,7 @@ export function createLogger(scope: string): ScopedLogger {
     };
     recordEntry(entry);
 
-    const isTest = typeof process !== 'undefined' && Boolean(process.env?.VITEST);
+    const isTest = globalThis.process !== undefined && Boolean(globalThis.process.env?.VITEST);
     if (isTest && (level === 'debug' || level === 'info')) {
       return;
     }
@@ -82,12 +96,4 @@ export function createLogger(scope: string): ScopedLogger {
     warn: (message, meta) => emit('warn', message, meta),
     error: (message, meta) => emit('error', message, meta),
   };
-}
-
-export function getRecentLogs(): readonly LogEntry[] {
-  return [...ringBuffer];
-}
-
-export function clearLogBuffer(): void {
-  ringBuffer.length = 0;
 }

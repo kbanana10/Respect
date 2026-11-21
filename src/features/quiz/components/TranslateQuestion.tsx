@@ -2,7 +2,7 @@ import React from 'react';
 import { ShieldCheck, X, Check, ArrowRight, Lightbulb } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Question } from '../hooks/useQuizEngine';
-import { t } from '../../../lib/translations';
+import { t, pickLocalized } from '../../../localization/translations';
 import { Language } from '../../../models/user';
 
 interface TranslateQuestionProps {
@@ -35,11 +35,21 @@ export function TranslateQuestion({
         {currentQ.type === 'fill_blank' && (
           <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/40 rounded-2xl p-4 text-center">
             <span className="text-[10px] font-extrabold text-amber-600 dark:text-amber-400 block uppercase tracking-wider mb-1">
-              {language !== 'ar' ? 'Translation Hint' : 'تلميح الترجمة'}
+              {pickLocalized(language, {
+                en: 'Translation Hint',
+                ar: 'تلميح الترجمة',
+                ku: 'Alîkariya Wergerê',
+              })}
             </span>
             <p className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center justify-center gap-1.5">
               <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-300 animate-pulse shrink-0" />
-              <span>{language !== 'ar' ? (currentQ.hintEn || currentQ.hintAr) : currentQ.hintAr}</span>
+              <span>
+                {pickLocalized(language, {
+                  en: currentQ.hintEn || currentQ.hintAr || '',
+                  ar: currentQ.hintAr || '',
+                  ku: currentQ.hintEn || currentQ.hintAr || '',
+                })}
+              </span>
             </p>
           </div>
         )}
@@ -77,7 +87,11 @@ export function TranslateQuestion({
         {!hasChecked && (
           <div className="flex flex-col items-center gap-2 pt-1 select-none">
             <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">
-              {language !== 'ar' ? 'Helper letters:' : 'حروف مساعدة للكتابة:'}
+              {pickLocalized(language, {
+                en: 'Helper letters:',
+                ar: 'حروف مساعدة للكتابة:',
+                ku: 'Tîpên alîkar:',
+              })}
             </span>
             <div className="flex gap-2 justify-center">
               {['ç', 'ê', 'î', 'ş', 'û'].map((char) => (

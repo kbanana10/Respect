@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { categories } from '../data/kurmanji';
 import { academicCategories } from '../data/academic';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
-import { t } from '../lib/translations';
+import { useAuth } from '../store/AuthContext';
+import { pickLocalized } from '../localization/translations';
 import { motion } from 'motion/react';
 import { 
-  ArrowLeft, BookOpen, Sparkles,
+  BookOpen, Sparkles,
   Binary, Palette, Cat, Apple, Users, Home, Calendar, 
   Backpack, Building2, School, Ruler, Laptop, Atom, 
   FlaskConical, Microscope, FileSpreadsheet, PenTool
@@ -53,17 +53,16 @@ export function VocabularyCategories() {
       <div className="flex items-center gap-3 py-2 max-w-4xl mx-auto">
         <div>
           <h2 className="text-xl font-black text-slate-900 dark:text-white leading-none">
-            {language !== 'ar' ? 'Vocabulary Hub' : 'القاموس والمفردات'}
+            {pickLocalized(language, { en: 'Vocabulary Hub', ar: 'القاموس والمفردات', ku: 'Navenda Peyvan' })}
           </h2>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1">
             <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-            {language !== 'ar' ? 'Word collections' : 'استعراض الحزم اللغوية'}
+            {pickLocalized(language, { en: 'Word collections', ar: 'استعراض الحزم اللغوية', ku: 'Komên peyvan' })}
           </p>
         </div>
       </div>
 
-      {/* 2. Elevated Brand Hero Card — PHASE 4 (unify): + radial gold glow to
-          match the Alphabet page reference hero. */}
+      {/* 2. Elevated Brand Hero Card */}
       <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900 rounded-[2rem] p-6 shadow-flat border border-line-soft relative overflow-hidden group">
         <div className="absolute inset-x-0 -top-16 h-48 bg-[radial-gradient(circle_at_50%_0%,#FFB300_0%,transparent_65%)] opacity-[0.10] pointer-events-none" aria-hidden="true" />
         <BookOpen className="absolute right-0 bottom-0 opacity-[0.06] w-40 h-40 transform translate-y-8 select-none pointer-events-none group-hover:scale-110 transition-transform duration-700 text-slate-500" />
@@ -71,15 +70,17 @@ export function VocabularyCategories() {
         <div className="space-y-2 relative z-10">
           <span className="text-[9px] bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 w-max">
             <Sparkles className="w-3.5 h-3.5 text-[#FFB300] fill-[#FFB300]/40 animate-pulse" />
-            {language !== 'ar' ? 'YOUR WORD TREASURY' : 'كنز كلماتك'}
+            {pickLocalized(language, { en: 'YOUR WORD TREASURY', ar: 'كنز كلماتك', ku: 'XEZÎNEYA PEYVÊN TE' })}
           </span>
           <h3 className="text-xl font-black mt-2 leading-tight tracking-tight text-ink">
-            {language !== 'ar' ? 'Expand Your Vocabulary' : 'ضاعف ثروتك اللغوية'}
+            {pickLocalized(language, { en: 'Expand Your Vocabulary', ar: 'ضاعف ثروتك اللغوية', ku: 'Peyvên Xwe Zêde Bike' })}
           </h3>
           <p className="text-muted text-[11px] leading-relaxed font-semibold">
-            {language !== 'ar' 
-              ? 'Discover essential everyday words, core academic phrasing, and curated definitions designed for direct retention.' 
-              : 'اكتشف الكلمات الكوردية الأساسية، والتصنيفات الدراسية والعبارات والمصطلحات الأكاديمية المصممة للحفظ السريع.'}
+            {pickLocalized(language, {
+              en: 'Discover essential everyday words, core academic phrasing, and curated definitions designed for direct retention.',
+              ar: 'اكتشف الكلمات الكوردية الأساسية، والتصنيفات الدراسية والعبارات والمصطلحات الأكاديمية المصممة للحفظ السريع.',
+              ku: 'Peyvên rojane yên bingehîn û peyvên akademîk ên bijartî kifş bike.',
+            })}
           </p>
         </div>
       </div>
@@ -94,7 +95,7 @@ export function VocabularyCategories() {
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent'
           }`}
         >
-          {language !== 'ar' ? 'General Words' : 'المفردات العامة'}
+          {pickLocalized(language, { en: 'General Words', ar: 'المفردات العامة', ku: 'Peyvên Giştî' })}
         </button>
         <button
           onClick={() => setActiveTab('academic')}
@@ -104,7 +105,7 @@ export function VocabularyCategories() {
               : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 bg-transparent'
           }`}
         >
-          {language !== 'ar' ? 'Academic Terms' : 'المصطلحات الأكاديمية'}
+          {pickLocalized(language, { en: 'Academic Terms', ar: 'المصطلحات الأكاديمية', ku: 'Peyvên Akademîk' })}
         </button>
       </div>
 
@@ -114,7 +115,11 @@ export function VocabularyCategories() {
           // Resolve standard category naming format
           const nameLabel = 'name' in cat ? cat.name : cat.nameEn;
           const nameArLabel = 'ar' in cat ? cat.ar : cat.nameAr;
-          const displayTitle = language !== 'ar' ? nameLabel : (nameArLabel || nameLabel);
+          const displayTitle = pickLocalized(language, {
+            en: nameLabel,
+            ar: nameArLabel || nameLabel,
+            ku: nameLabel,
+          });
           
           return (
             <motion.button

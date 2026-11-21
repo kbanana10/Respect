@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { ArrowLeft, ArrowRight, Sparkles, CheckCircle2, RotateCcw, BookOpen, Table, Languages, Headphones, PenLine, ArrowLeftRight, Keyboard, ListOrdered } from 'lucide-react';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '../../store/AuthContext';
 import { getGrammarLesson } from '../../data/grammar';
 import { SUBJECT_ACCENTS } from '../../constants/subjectAccents';
-import { exerciseIconKey } from '../../lib/grammar/grammarPresentation';
+import { exerciseIconKey, pickLocalized } from '../../lib/grammar/grammarPresentation';
 import { useGrammarLesson } from './useGrammarLesson';
 import { ConceptCard } from './ConceptCard';
 import { SelectTranslationExercise } from './SelectTranslationExercise';
@@ -42,8 +42,6 @@ export function GrammarLessonPage() {
   const navigate = useNavigate();
   const { lessonId } = useParams();
   const { language } = useAuth();
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
 
   const lesson = lessonId ? getGrammarLesson(lessonId) : null;
   const engine = useGrammarLesson(lesson);
@@ -51,7 +49,7 @@ export function GrammarLessonPage() {
   const [stage, setStage] = useState<Stage>('concepts');
   const [conceptIndex, setConceptIndex] = useState(0);
 
-  const backLabel = isKu ? 'Vegere' : isAr ? 'رجوع' : 'Back';
+  const backLabel = pickLocalized({ ku: 'Vegere', ar: 'رجوع', en: 'Back' }, language);
 
   if (!lesson) {
     return (
@@ -62,14 +60,14 @@ export function GrammarLessonPage() {
           className="flex items-center gap-1.5 text-sm font-black text-teal-600 dark:text-teal-400 hover:opacity-80 transition-opacity"
         >
           <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
-          {isKu ? 'Rêziman' : isAr ? 'النحو' : 'Grammar'}
+          {pickLocalized({ ku: 'Rêziman', ar: 'النحو', en: 'Grammar' }, language)}
         </button>
         <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-line-soft rounded-[32px] p-8 shadow-flat text-center space-y-3">
           <h3 className="text-xl font-black tracking-tight text-ink">
-            {isKu ? 'Ders nehat dîtin' : isAr ? 'الدرس غير موجود' : 'Lesson not found'}
+            {pickLocalized({ ku: 'Ders nehat dîtin', ar: 'الدرس غير موجود', en: 'Lesson not found' }, language)}
           </h3>
           <p className="text-muted text-[12px] font-semibold">
-            {isKu ? 'Ev mijar tune ye.' : isAr ? 'هذا الموضوع غير متوفر.' : 'That grammar topic does not exist.'}
+            {pickLocalized({ ku: 'Ev mijar tune ye.', ar: 'هذا الموضوع غير متوفر.', en: 'That grammar topic does not exist.' }, language)}
           </p>
         </div>
       </div>
@@ -82,9 +80,7 @@ export function GrammarLessonPage() {
   const exercise = engine.exercise;
   const showResults = stage === 'exercises' && engine.phase === 'finished';
 
-  const exerciseLabel = exercise
-    ? (isAr ? EXERCISE_LABELS[exercise.type].ar : isKu ? EXERCISE_LABELS[exercise.type].ku : EXERCISE_LABELS[exercise.type].en)
-    : '';
+  const exerciseLabel = exercise ? pickLocalized(EXERCISE_LABELS[exercise.type], language) : '';
   const ExerciseIcon = exercise ? EXERCISE_ICONS[exerciseIconKey(exercise.type)] : null;
 
   function renderExerciseBody() {
@@ -128,7 +124,7 @@ export function GrammarLessonPage() {
           </button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-black tracking-tight text-ink leading-snug truncate">
-              {isAr ? lesson.title.ar : isKu ? lesson.title.ku : lesson.title.en}
+              {pickLocalized(lesson.title, language)}
             </h1>
             {stage === 'concepts' && (
               <div className="flex items-center gap-2 mt-1">
@@ -168,7 +164,7 @@ export function GrammarLessonPage() {
                   key={c.id}
                   type="button"
                   onClick={() => setConceptIndex(i)}
-                  aria-label={`${isAr ? 'مفهوم' : 'Concept'} ${i + 1}`}
+                  aria-label={`${pickLocalized({ ar: 'مفهوم', en: 'Concept', ku: 'Têgeh' }, language)} ${i + 1}`}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     i === conceptIndex ? 'w-6 bg-teal-500' : 'w-2 bg-slate-200 dark:bg-slate-700'
                   }`}
@@ -188,7 +184,7 @@ export function GrammarLessonPage() {
                   className="flex-1 py-3.5 rounded-3xl font-black text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 transition-all hover:bg-slate-200 dark:hover:bg-slate-700 border-none"
                 >
                   <ArrowLeft className="w-4 h-4 rtl:-scale-x-100" />
-                  {isAr ? 'السابق' : isKu ? 'Paş' : 'Back'}
+                  {pickLocalized({ ar: 'السابق', ku: 'Paş', en: 'Back' }, language)}
                 </button>
               )}
               {conceptIndex < conceptTotal - 1 ? (
@@ -197,7 +193,7 @@ export function GrammarLessonPage() {
                   onClick={() => setConceptIndex((i) => Math.min(conceptTotal - 1, i + 1))}
                   className="flex-1 py-3.5 rounded-3xl font-black text-sm bg-teal-700 hover:bg-teal-800 active:scale-95 text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none"
                 >
-                  {isAr ? 'التالي' : isKu ? 'Pêş' : 'Next'}
+                  {pickLocalized({ ar: 'التالي', ku: 'Pêş', en: 'Next' }, language)}
                   <ArrowRight className="w-4 h-4 rtl:-scale-x-100" />
                 </button>
               ) : (
@@ -207,7 +203,7 @@ export function GrammarLessonPage() {
                   className="flex-1 py-3.5 rounded-3xl font-black text-sm bg-teal-700 hover:bg-teal-800 active:scale-95 text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none"
                 >
                   <Sparkles className="w-4 h-4" />
-                  {isAr ? 'ابدأ التمارين' : isKu ? 'Dest bi temrînan bike' : 'Start exercises'}
+                  {pickLocalized({ ar: 'ابدأ التمارين', ku: 'Dest bi temrînan bike', en: 'Start exercises' }, language)}
                 </button>
               )}
             </div>
@@ -221,7 +217,9 @@ export function GrammarLessonPage() {
                 {ExerciseIcon ? <ExerciseIcon className="w-3.5 h-3.5" /> : <BookOpen className="w-3.5 h-3.5" />}
                 {exerciseLabel}
               </span>
-              <span className="text-[10px] font-black text-muted">{isAr ? 'النقاط:' : 'Score:'} {engine.score}</span>
+              <span className="text-[10px] font-black text-muted">
+                {pickLocalized({ ar: 'النقاط:', en: 'Score:', ku: 'Xal:' }, language)} {engine.score}
+              </span>
             </div>
             <div className="bg-white dark:bg-slate-900 rounded-[28px] p-5 shadow-flat border border-line-soft flex flex-col flex-1">
               {renderExerciseBody()}
@@ -241,17 +239,26 @@ export function GrammarLessonPage() {
             </div>
             <div className="relative z-10 space-y-1">
               <h3 className="text-xl font-black tracking-tight text-ink leading-snug">
-                {isKu ? 'Pîroz be!' : isAr ? 'أحسنت!' : 'Lesson complete!'}
+                {pickLocalized({ ku: 'Pîroz be!', ar: 'أحسنت!', en: 'Lesson complete!' }, language)}
               </h3>
               <p className="text-muted text-[12px] font-semibold">
-                {isAr ? `أنهيتَ درس ${lesson.title.ar}.` : isKu ? `Te dersa ${lesson.title.ku} qedand.` : `You finished ${lesson.title.en}.`}
+                {pickLocalized(
+                  {
+                    ar: `أنهيتَ درس ${lesson.title.ar}.`,
+                    ku: `Te dersa ${lesson.title.ku} qedand.`,
+                    en: `You finished ${lesson.title.en}.`,
+                  },
+                  language,
+                )}
               </p>
             </div>
 
             <div className="relative z-10 w-full rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4 flex items-center justify-around">
               <div className="text-center">
                 <div className="text-2xl font-black text-ink">{engine.score}/{engine.total}</div>
-                <div className="text-[10px] font-black text-muted uppercase tracking-wider">{isAr ? 'النقاط' : 'Score'}</div>
+                <div className="text-[10px] font-black text-muted uppercase tracking-wider">
+                  {pickLocalized({ ar: 'النقاط', en: 'Score', ku: 'Xal' }, language)}
+                </div>
               </div>
               <div className="w-px h-10 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />
               <div className="text-center">
@@ -265,13 +272,15 @@ export function GrammarLessonPage() {
               <div className="relative z-10 w-full rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-4 text-start" dir="auto">
                 <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-muted mb-2">
                   <Table className="w-3.5 h-3.5" />
-                  {isAr ? 'جدول مرجعي' : 'Quick reference'}
+                  {pickLocalized({ ar: 'جدول مرجعي', en: 'Quick reference', ku: 'Tabloya bilez' }, language)}
                 </span>
                 <div className="space-y-1.5">
                   {lesson.summaryTable.rows.map((row, i) => (
                     <div key={i} className="flex items-center justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700/70 pb-1.5 last:border-0">
                       <bdi dir="ltr" className="text-[12px] font-black text-ink">{row.ku}</bdi>
-                      <span className="text-[11px] font-bold text-muted">{isAr ? row.ar : row.en}</span>
+                      <span className="text-[11px] font-bold text-muted">
+                        {pickLocalized({ ar: row.ar, en: row.en, ku: row.en }, language)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -288,14 +297,14 @@ export function GrammarLessonPage() {
                 className="w-full py-3.5 rounded-3xl font-black text-sm bg-teal-700 hover:bg-teal-800 active:scale-95 text-white transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer border-none"
               >
                 <BookOpen className="w-4 h-4" />
-                {isAr ? 'مراجعة البطاقات' : isKu ? 'Vegere kartan' : 'Review cards'}
+                {pickLocalized({ ar: 'مراجعة البطاقات', ku: 'Vegere kartan', en: 'Review cards' }, language)}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/grammar')}
                 className="w-full py-3.5 rounded-3xl font-black text-sm bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center gap-2 cursor-pointer transition-all hover:bg-slate-200 dark:hover:bg-slate-700 border-none"
               >
-                {isKu ? 'Vegere Rêzimanê' : isAr ? 'العودة إلى النحو' : 'Back to Grammar'}
+                {pickLocalized({ ku: 'Vegere Rêzimanê', ar: 'العودة إلى النحو', en: 'Back to Grammar' }, language)}
               </button>
               <button
                 type="button"
@@ -306,7 +315,7 @@ export function GrammarLessonPage() {
                 className="w-full py-3 rounded-3xl font-bold text-sm bg-transparent text-teal-600 dark:text-teal-400 flex items-center justify-center gap-2 cursor-pointer transition-opacity hover:opacity-70 border-none"
               >
                 <RotateCcw className="w-4 h-4" />
-                {isKu ? 'Dîsa biceribîne' : isAr ? 'إعادة المحاولة' : 'Try again'}
+                {pickLocalized({ ku: 'Dîsa biceribîne', ar: 'إعادة المحاولة', en: 'Try again' }, language)}
               </button>
             </div>
           </motion.div>

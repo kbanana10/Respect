@@ -2,11 +2,12 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { Lightbulb } from 'lucide-react';
 import type { GrammarConcept, GrammarExample } from '../../data/grammar/types';
+import { pickLocalized, type UILang } from '../../lib/grammar/grammarPresentation';
 import { TriRow } from './TriRow';
 
 interface ConceptCardProps {
   concept: GrammarConcept;
-  language: string;
+  language: UILang;
 }
 
 /**
@@ -19,8 +20,14 @@ interface ConceptCardProps {
  *  - A one-line "when to use it" note (Arabic primary, English secondary).
  */
 export function ConceptCard({ concept, language }: ConceptCardProps) {
-  const isAr = language === 'ar';
-  const noteHeading = isAr ? 'متى تُستخدم: ' : language === 'ku' ? 'Kengî tê bikaranîn: ' : 'When to use it: ';
+  const noteHeading = pickLocalized(
+    { ar: 'متى تُستخدم: ', ku: 'Kengî tê bikaranîn: ', en: 'When to use it: ' },
+    language,
+  );
+  const primaryUsage = pickLocalized(
+    { ar: concept.usage.ar, en: concept.usage.en, ku: concept.usage.en },
+    language,
+  );
 
   function exampleRow(example: GrammarExample, index: number) {
     return (
@@ -69,7 +76,7 @@ export function ConceptCard({ concept, language }: ConceptCardProps) {
       {/* Examples */}
       <div className="mt-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 p-3.5 space-y-1.5">
         <span className="block text-[10px] font-black uppercase tracking-wider text-muted mb-1">
-          {isAr ? 'أمثلة' : language === 'ku' ? 'Nimûne' : 'Examples'}
+          {pickLocalized({ ar: 'أمثلة', ku: 'Nimûne', en: 'Examples' }, language)}
         </span>
         <div className="space-y-1">{concept.examples.map(exampleRow)}</div>
       </div>
@@ -80,9 +87,9 @@ export function ConceptCard({ concept, language }: ConceptCardProps) {
         <div className="space-y-0.5">
           <p className="text-[12px] font-bold leading-relaxed text-slate-800 dark:text-slate-100">
             <span className="font-black text-teal-700 dark:text-teal-300">{noteHeading}</span>
-            {isAr ? concept.usage.ar : concept.usage.en}
+            {primaryUsage}
           </p>
-          {!isAr && (
+          {primaryUsage !== concept.usage.ar && (
             <p className="text-[11px] font-medium leading-relaxed text-muted">{concept.usage.ar}</p>
           )}
         </div>

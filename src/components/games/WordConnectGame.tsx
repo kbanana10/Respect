@@ -7,6 +7,7 @@ import { playSuccessSound, playFailureSound, playCompleteSound } from '../../fea
 import { Progress, StatPill } from '../ui';
 import { GameHeader } from './GameHeader';
 import { getPrimaryAnswerVariant } from '../../features/quiz/utils/answerUtils';
+import { pickLocalized } from '../../localization/translations';
 
 interface WordConnectGameProps {
   vocabulary: Word[];
@@ -377,28 +378,32 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
       
       {/* Header Bar — unified GameHeader (top-bar harmonization audit) */}
       <GameHeader
-        title={language !== 'ar' ? 'Word Connect' : 'توصيل الكلمات'}
+        title={pickLocalized(language, { en: 'Word Connect', ar: 'توصيل الكلمات', ku: 'Girêdana Peyvan' })}
         onExit={onClose}
-        exitLabel={language !== 'ar' ? 'Exit game' : 'الخروج من اللعبة'}
-        stat={{ label: language !== 'ar' ? 'Level' : 'المستوى', value: `${level}/5` }}
+        exitLabel={pickLocalized(language, { en: 'Exit game', ar: 'الخروج من اللعبة', ku: 'Ji lîstikê derkeve' })}
+        stat={{ label: pickLocalized(language, { en: 'Level', ar: 'المستوى', ku: 'Ast' }), value: `${level}/5` }}
       />
 
       {/* HUD Info Row */}
       <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-3 shadow-xs mb-5">
         <div className="text-start font-bold">
           <span className="text-[10px] text-slate-400 block tracking-widest uppercase">
-            {language !== 'ar' ? 'TRANSLATION CLUE' : 'معنى الكلمة المستهدفة'}
+            {pickLocalized(language, { en: 'TRANSLATION CLUE', ar: 'معنى الكلمة المستهدفة', ku: 'WATEYA PEYVÊ' })}
           </span>
           <span className="text-base font-black text-indigo-600 dark:text-indigo-400">
-            {language !== 'ar' ? currentWord.en : currentWord.ar}
+            {pickLocalized(language, { en: currentWord.en, ar: currentWord.ar, ku: currentWord.en })}
           </span>
         </div>
 
-        <StatPill icon={<Star className="w-4 h-4 fill-current" />} label={language !== 'ar' ? 'XP' : 'خبرة'} value={gainedXP} />
+        <StatPill icon={<Star className="w-4 h-4 fill-current" />} label={pickLocalized(language, { en: 'XP', ar: 'خبرة', ku: 'XP' })} value={gainedXP} />
       </div>
 
       <div className="mb-4">
-        <Progress value={level - 1 + (isLevelSuccess ? 1 : 0)} max={5} label={language !== 'ar' ? 'Challenge Progress' : 'تقدم التحدي'} />
+        <Progress
+          value={level - 1 + (isLevelSuccess ? 1 : 0)}
+          max={5}
+          label={pickLocalized(language, { en: 'Challenge Progress', ar: 'تقدم التحدي', ku: 'Pêşketina Pêşbaziyê' })}
+        />
       </div>
 
       {/* Main Game Screen */}
@@ -410,25 +415,27 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
           
           <div className="space-y-1">
             <h3 className="text-2xl font-black text-indigo-900 dark:text-indigo-400 uppercase tracking-widest">
-              {language !== 'ar' ? 'Wonderful Victory!' : 'فوز باهر ومستحق!'}
+              {pickLocalized(language, { en: 'Wonderful Victory!', ar: 'فوز باهر ومستحق!', ku: 'Serkeftineke Mezin!' })}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-              {language !== 'ar' 
-                ? 'You have connected all word levels and completed the Word Connect challenge!' 
-                : 'لقد أتممت توصيل الكلمات وحل جميع الألغاز في جولة التحدي بنجاح تام!'}
+              {pickLocalized(language, {
+                en: 'You have connected all word levels and completed the Word Connect challenge!',
+                ar: 'لقد أتممت توصيل الكلمات وحل جميع الألغاز في جولة التحدي بنجاح تام!',
+                ku: 'Te hemû astên peyvan girê dan û pêşbazî bi serkeftî qedand!',
+              })}
             </p>
           </div>
 
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl w-full max-w-sm text-xs space-y-3 shadow-xs">
             <p className="text-slate-400 font-bold uppercase tracking-widest text-center text-[10px]">
-              {language !== 'ar' ? 'Round Performance Summary' : 'ملخص أدائك الكلي'}
+              {pickLocalized(language, { en: 'Round Performance Summary', ar: 'ملخص أدائك الكلي', ku: 'Kurteya Performansê' })}
             </p>
             <div className="flex justify-between text-slate-600 dark:text-slate-400 font-bold pb-2 border-b border-dashed border-slate-200 dark:border-slate-800">
-              <span>{language !== 'ar' ? 'Levels Completed:' : 'المستويات المنجزة:'}</span>
+              <span>{pickLocalized(language, { en: 'Levels Completed:', ar: 'المستويات المنجزة:', ku: 'Astên Qediyayî:' })}</span>
               <span className="text-indigo-600 font-black">5 / 5</span>
             </div>
             <div className="flex justify-between text-slate-600 dark:text-slate-400 font-bold">
-              <span>{language !== 'ar' ? 'Total XP Gained:' : 'مجموع النقاط المكتسبة:'}</span>
+              <span>{pickLocalized(language, { en: 'Total XP Gained:', ar: 'مجموع النقاط المكتسبة:', ku: 'Tevahiya XP:' })}</span>
               <span className="text-yellow-500 font-black">+{gainedXP} XP</span>
             </div>
           </div>
@@ -438,14 +445,14 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
               onClick={onClose}
               className="flex-1 py-3.5 min-h-[44px] bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 active:scale-95 text-slate-700 dark:text-slate-300 font-bold rounded-full text-xs transition-all border border-slate-200 dark:border-slate-800 cursor-pointer outline-none"
             >
-              {language !== 'ar' ? 'Exit' : 'خروج'}
+              {pickLocalized(language, { en: 'Exit', ar: 'خروج', ku: 'Derkeve' })}
             </button>
             <button
               onClick={handleRestartFullGame}
               className="flex-1 py-3.5 min-h-[44px] bg-[#FFB300] hover:bg-[#E69500] text-[#432C00] shadow-[0_2px_0_#E69500] active:scale-95 font-extrabold rounded-full text-xs transition-all cursor-pointer outline-none flex items-center justify-center gap-1.5"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              <span>{language !== 'ar' ? 'Play Again' : 'العب مجدداً'}</span>
+              <span>{pickLocalized(language, { en: 'Play Again', ar: 'العب مجدداً', ku: 'Dîsa Bilîze' })}</span>
             </button>
           </div>
         </div>
@@ -570,10 +577,10 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
               {/* Central hint or circle pad indicator */}
               <div className="absolute w-24 h-24 bg-slate-50 dark:bg-slate-950/60 rounded-full border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center p-2 text-center pointer-events-none select-none z-0 shadow-inner">
                 <span className="text-[10px] font-black text-slate-400 leading-tight uppercase block">
-                  {language !== 'ar' ? 'CONNECT' : 'وصّل'}
+                  {pickLocalized(language, { en: 'CONNECT', ar: 'وصّل', ku: 'GIRÊ BIDE' })}
                 </span>
                 <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                  {language !== 'ar' ? 'Swipe / Tap' : 'اسحب أو انقر'}
+                  {pickLocalized(language, { en: 'Swipe / Tap', ar: 'اسحب أو انقر', ku: 'Bikşîne / Bitikîne' })}
                 </span>
               </div>
 
@@ -612,10 +619,10 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
             <button
               onClick={handleShuffle}
               className="flex-1 py-3 px-4 min-h-[44px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center gap-2 font-black text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all shadow-xs cursor-pointer active:scale-95"
-              title={language !== 'ar' ? 'Shuffle Letters' : 'خلط ترتيب الحروف'}
+              title={pickLocalized(language, { en: 'Shuffle Letters', ar: 'خلط ترتيب الحروف', ku: 'Tîpan Tevlihev Bike' })}
             >
               <Shuffle className="w-4 h-4 text-indigo-500" />
-              <span>{language !== 'ar' ? 'Shuffle' : 'إعادة ترتيب'}</span>
+              <span>{pickLocalized(language, { en: 'Shuffle', ar: 'إعادة ترتيب', ku: 'Tevlihev bike' })}</span>
             </button>
 
             {/* Hint button */}
@@ -629,7 +636,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
               }`}
             >
               <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span>{language !== 'ar' ? 'Reveal Hint' : 'كشف حرف'}</span>
+              <span>{pickLocalized(language, { en: 'Reveal Hint', ar: 'كشف حرف', ku: 'Tîpekê nîşan bide' })}</span>
             </button>
           </div>
 
@@ -647,18 +654,20 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
                   
                   <div className="space-y-1 relative z-10">
                     <h3 className="text-xl font-black">
-                      {language !== 'ar' ? 'Awesome Match!' : 'توصيل رائع ومتقن!'}
+                      {pickLocalized(language, { en: 'Awesome Match!', ar: 'توصيل رائع ومتقن!', ku: 'Girêdaneke Bêhempa!' })}
                     </h3>
                     <p className="text-xs text-indigo-100 leading-relaxed font-semibold">
-                      {language !== 'ar' 
-                        ? `You spelled "${currentWord.ku}" correctly!` 
-                        : `تهانينا! لقد ركّبت الكلمة "${currentWord.ku}" بشكل صحيح متقن!`}
+                      {pickLocalized(language, {
+                        en: `You spelled "${currentWord.ku}" correctly!`,
+                        ar: `تهانينا! لقد ركّبت الكلمة "${currentWord.ku}" بشكل صحيح متقن!`,
+                        ku: `Aferîn! Te peyva "${currentWord.ku}" rast nivîsand!`,
+                      })}
                     </p>
                   </div>
 
                   <div className="inline-flex bg-white/15 rounded-2xl items-center justify-center py-2.5 px-4 gap-2 border border-white/5 font-extrabold text-xs">
                     <Award className="w-4.5 h-4.5 text-yellow-300 fill-yellow-300 animate-pulse" />
-                    <span>+10 XP {language !== 'ar' ? 'Earned' : 'نقاط إضافية مضافة'}</span>
+                    <span>+10 XP {pickLocalized(language, { en: 'Earned', ar: 'نقاط إضافية مضافة', ku: 'Qezenc bû' })}</span>
                   </div>
 
                   <div className="flex gap-3 relative z-10 pt-1">
@@ -666,19 +675,17 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
                       onClick={onClose}
                       className="flex-1 py-3 min-h-[44px] bg-white/10 hover:bg-white/20 active:scale-95 text-white font-bold rounded-full text-xs transition-all border border-white/10 cursor-pointer outline-none"
                     >
-                      {language !== 'ar' ? 'Exit' : 'الرئيسية'}
+                      {pickLocalized(language, { en: 'Exit', ar: 'الرئيسية', ku: 'Derkeve' })}
                     </button>
                     <button
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Manual advance: cancels the pending auto-advance
-                        // timer; the lock makes +1 the only possible outcome.
                         advanceLevel(level);
                       }}
                       className="flex-1 py-3 min-h-[44px] bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black rounded-full text-xs hover:from-emerald-400 hover:to-emerald-500 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-emerald-500/10 outline-none"
                     >
-                      <span>{language !== 'ar' ? 'Next Level' : 'المستوى التالي'}</span>
+                      <span>{pickLocalized(language, { en: 'Next Level', ar: 'المستوى التالي', ku: 'Asta Din' })}</span>
                       <ArrowRight className="w-3.5 h-3.5 rtl:rotate-180" />
                     </button>
                   </div>

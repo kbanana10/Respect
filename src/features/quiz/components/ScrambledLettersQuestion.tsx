@@ -2,7 +2,7 @@ import React from 'react';
 import { ShieldCheck, X, Check, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Question } from '../hooks/useQuizEngine';
-import { t } from '../../../lib/translations';
+import { t, pickLocalized } from '../../../localization/translations';
 import { Language } from '../../../models/user';
 
 interface ScrambledLettersQuestionProps {
@@ -38,7 +38,11 @@ export function ScrambledLettersQuestion({
         <div className="p-5 min-h-[70px] bg-white border-2 border-dashed border-slate-200 rounded-3xl dark:bg-slate-900 dark:border-slate-800 flex flex-wrap gap-1.5 items-center justify-center shadow-inner">
           {typingAnswer.length === 0 ? (
             <span className="text-slate-400 text-xs font-bold animate-pulse">
-              {language !== 'ar' ? 'Click letter blocks below to spell...' : 'اضغط على المكعبات في الأسفل للتهجئة...'}
+              {pickLocalized(language, {
+                en: 'Click letter blocks below to spell...',
+                ar: 'اضغط على المكعبات في الأسفل للتهجئة...',
+                ku: 'Li tîpên jêrîn bikirtîne da ku binivîsî...',
+              })}
             </span>
           ) : (
             typingAnswer.split('').map((char, index) => (
@@ -93,7 +97,11 @@ export function ScrambledLettersQuestion({
               }}
               className="min-h-[44px] px-3 py-2 text-xs font-black text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer bg-transparent border-none focus-visible:ring-2 focus-visible:ring-indigo-600 rounded-lg"
             >
-              {language !== 'ar' ? 'Reset Spelling ↺' : 'إعادة تعيين الأحرف ↺'}
+              {pickLocalized(language, {
+                en: 'Reset Spelling ↺',
+                ar: 'إعادة تعيين الأحرف ↺',
+                ku: 'Tîpan nû bike ↺',
+              })}
             </button>
           </div>
         )}

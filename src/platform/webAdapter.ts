@@ -6,18 +6,23 @@ import { createLogger } from '../core/logging/logger';
 
 const log = createLogger('WebPlatform');
 
+interface IOSNavigator extends Navigator {
+  readonly standalone?: boolean;
+}
+
 function detectStandalonePWA(): boolean {
-  if (typeof window === 'undefined') return false;
+  if (globalThis.window === undefined) return false;
   const standaloneMedia =
-    typeof window.matchMedia === 'function' &&
+    Boolean(window.matchMedia) &&
     window.matchMedia('(display-mode: standalone)').matches;
-  const iosStandalone =
-    (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+  // SAFETY: iOS Safari exposes the non-standard boolean `navigator.standalone` property on the standard Navigator instance.
+  const iosNav = window.navigator as IOSNavigator;
+  const iosStandalone = iosNav.standalone === true;
   return standaloneMedia || iosStandalone;
 }
 
 function detectIOSSafari(): boolean {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+  if (globalThis.window === undefined || globalThis.navigator === undefined) return false;
   const ua = navigator.userAgent.toLowerCase();
   const isIOSDevice =
     /iphone|ipad|ipod/.test(ua) ||
@@ -46,7 +51,7 @@ export class WebPlatformAdapter implements PlatformAdapter {
   }
 
   public async syncStatusBar(theme: 'light' | 'dark'): Promise<void> {
-    if (typeof document === 'undefined') return;
+    if (globalThis.document === undefined) return;
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     if (meta) {
       meta.content = theme === 'dark' ? '#141414' : '#FFB300';
@@ -54,7 +59,7 @@ export class WebPlatformAdapter implements PlatformAdapter {
   }
 
   public async triggerHaptic(style: HapticStyle): Promise<void> {
-    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    if (globalThis.navigator === undefined || !('vibrate' in navigator)) return;
     try {
       const pattern =
         style === 'success' ? [12, 40, 18] :
@@ -67,12 +72,11 @@ export class WebPlatformAdapter implements PlatformAdapter {
   }
 
   public onHardwareBackButton(_handler: () => boolean): () => void {
-    // Web uses browser history popstate; no hardware back button interception needed.
     return () => {};
   }
 
   public onAppStateChange(handler: (isActive: boolean) => void): () => void {
-    if (typeof document === 'undefined') return () => {};
+    if (globalThis.document === undefined) return () => {};
     const listener = () => {
       handler(document.visibilityState === 'visible');
     };
@@ -81,7 +85,7 @@ export class WebPlatformAdapter implements PlatformAdapter {
   }
 
   public onNetworkChange(handler: (online: boolean) => void): () => void {
-    if (typeof window === 'undefined') return () => {};
+    if (globalThis.window === undefined) return () => {};
     const onOnline = () => handler(true);
     const onOffline = () => handler(false);
     window.addEventListener('online', onOnline);
@@ -93,35 +97,35 @@ export class WebPlatformAdapter implements PlatformAdapter {
   }
 
   public async isOnline(): Promise<boolean> {
-    if (typeof navigator === 'undefined') return true;
+    if (globalThis.navigator === undefined) return true;
     return navigator.onLine;
   }
 
   public async kvGet(key: string): Promise<string | null> {
     try {
-      if (typeof window === 'undefined') return null;
+      if (globalThis.window === undefined) return null;
       return window.localStorage.getItem(key);
     } catch (err) {
-      log.warn('localStorage.getItem failed', { key, err });
+      log.warn('localStorage.getItem failed', { key, err: err instanceof Error ? err : String(err) });
       return null;
     }
   }
 
   public async kvSet(key: string, value: string): Promise<void> {
     try {
-      if (typeof window === 'undefined') return;
+      if (globalThis.window === undefined) return;
       window.localStorage.setItem(key, value);
     } catch (err) {
-      log.warn('localStorage.setItem failed', { key, err });
+      log.warn('localStorage.setItem failed', { key, err: err instanceof Error ? err : String(err) });
     }
   }
 
   public async kvRemove(key: string): Promise<void> {
     try {
-      if (typeof window === 'undefined') return;
+      if (globalThis.window === undefined) return;
       window.localStorage.removeItem(key);
     } catch (err) {
-      log.warn('localStorage.removeItem failed', { key, err });
+      log.warn('localStorage.removeItem failed', { key, err: err instanceof Error ? err : String(err) });
     }
   }
 

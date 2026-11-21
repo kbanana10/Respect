@@ -9,10 +9,10 @@
  *
  * Returning users (user already present) are forwarded straight to "/".
  */
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { useNavigate } from 'react-router';
 import React, { useState, useEffect } from 'react';
-import { t } from '../lib/translations';
+import { t, pickLocalized } from '../localization/translations';
 import { motion, AnimatePresence } from 'motion/react';
 import { Sparkles, ArrowLeft, Check } from 'lucide-react';
 import { Language } from '../models/user';
@@ -70,11 +70,11 @@ export function Login() {
       await loginWithGoogle();
     } catch {
       setAuthError(
-        language === 'ku'
-          ? 'Têketina Google serneket. Ji kerema xwe wek mêvan berdewam bike.'
-          : language === 'ar'
-          ? 'تعذّر تسجيل الدخول عبر Google. تابع كضيف من فضلك.'
-          : 'Google sign-in did not complete. Please continue as guest.'
+        pickLocalized(language, {
+          ku: 'Têketina Google serneket. Ji kerema xwe wek mêvan berdewam bike.',
+          ar: 'تعذّر تسجيل الدخول عبر Google. تابع كضيف من فضلك.',
+          en: 'Google sign-in did not complete. Please continue as guest.',
+        })
       );
     } finally {
       setGoogleBusy(false);

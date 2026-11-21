@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '../../store/AuthContext';
 import type { GrammarExercise } from '../../data/grammar/types';
 import { CheckButton, ContinueButton, ResultNote, DiacriticKeys } from './ExerciseChrome';
 import { TriRow } from './TriRow';
@@ -19,7 +19,6 @@ interface WriteWordExerciseProps {
  */
 export function WriteWordExercise({ exercise, checked, onCheck, onNext }: WriteWordExerciseProps) {
   const { language } = useAuth();
-  const isAr = language === 'ar';
   const [value, setValue] = useState('');
   const submitted = checked !== null;
   const correct = checked === true;
@@ -75,16 +74,24 @@ export function WriteWordExercise({ exercise, checked, onCheck, onNext }: WriteW
           correct={correct}
           answerText={exercise.correctAnswer}
           answerIsKurdish
-          headline={correct ? (isAr ? 'صحيح!' : 'Correct!') : isAr ? 'خطأ' : 'Incorrect'}
-          answerLabel={isAr ? 'الإجابة الصحيحة هي:' : 'Correct answer is:'}
+          headline={
+            correct
+              ? pickLocalized({ ar: 'صحيح!', ku: 'Rast!', en: 'Correct!' }, language)
+              : pickLocalized({ ar: 'خطأ', ku: 'Şaş', en: 'Incorrect' }, language)
+          }
+          answerLabel={pickLocalized({ ar: 'الإجابة الصحيحة هي:', ku: 'Bersiva rast ev e:', en: 'Correct answer is:' }, language)}
         />
       )}
 
       <div className="mt-auto">
         {!submitted ? (
-          <CheckButton disabled={!value.trim()} onClick={() => onCheck(value)} label={isAr ? 'تحقق' : 'Check'} />
+          <CheckButton
+            disabled={!value.trim()}
+            onClick={() => onCheck(value)}
+            label={pickLocalized({ ar: 'تحقق', ku: 'Kontrol bike', en: 'Check' }, language)}
+          />
         ) : (
-          <ContinueButton onClick={onNext} label={isAr ? 'متابعة' : 'Continue'} />
+          <ContinueButton onClick={onNext} label={pickLocalized({ ar: 'متابعة', ku: 'Bidomîne', en: 'Continue' }, language)} />
         )}
       </div>
     </div>

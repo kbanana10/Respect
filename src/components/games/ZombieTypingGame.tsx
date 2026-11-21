@@ -28,6 +28,7 @@ import {
   stopZombieMusic 
 } from '../../features/audio/hooks/useAudio';
 import { Progress, StatPill } from '../ui';
+import { pickLocalized } from '../../localization/translations';
 
 interface ZombieTypingGameProps {
   vocabulary: Word[];
@@ -59,7 +60,7 @@ export function ZombieTypingGame({ vocabulary, language, onWin, onClose }: Zombi
    * for listening, "Eniya" for wave). All copy now localizes per app
    * language, with the Kurdish reviewed and corrected.
    */
-  const zt = ({
+  const zt = pickLocalized(language, {
     en: {
       kicker: 'ATTACK OF THE', title: 'ZOMBIES', tagline: 'Learn, defend, survive!',
       rules: 'HOW TO PLAY',
@@ -78,14 +79,14 @@ export function ZombieTypingGame({ vocabulary, language, onWin, onClose }: Zombi
     ku: {
       kicker: 'ÊRÎŞA', title: 'ZOMBIYAN', tagline: 'Fêr bibe, biparêze, serkeftî be!',
       rules: 'ÇAWA TÊ LÎSTIN',
-      rule1t: 'Peyvên rast binivîse', rule1d: '{zt.rule1d}',
+      rule1t: 'Peyvên rast binivîse', rule1d: 'Bê şaşî binivîse',
       rule2t: 'Zimanê xwe bi pêş bixe', rule2d: 'Xwendin + Guhdarîkirin + Nivîsandin',
       rule3t: 'Hemû pêlan têk bibe', rule3d: 'Puana xwe bilind bike!',
       best: 'PUANA TE YA HERÎ BILIND', start: 'DEST PÊ BIKE',
       wave: 'PÊL', score: 'PUAN', time: 'DEM',
       prompt: 'VÊ PEYVÊ BINIVÎSE', canType: 'Dikarî binivîsî:', or: 'an',
       placeholder: 'Bersiva xwe binivîse…', clear: 'Paqij bike', space: 'Navber', submit: 'TEMAM',
-      lost: 'DAWÎ!', lostSub: 'Zombî bi ser ketin!', lostDesc: '{zt.lostDesc}',
+      lost: 'DAWÎ!', lostSub: 'Zombî bi ser ketin!', lostDesc: 'Xem neke — dîsa biceribîne.',
       tryAgain: 'DÎSA BICERIBÎNE', backHome: 'VEGERE LÎSTIKAN',
       paused: 'LÎSTIK RAWESTIYA', pausedSub: 'Bêhna xwe veke.', resume: 'Berdewam bike', mainMenu: 'Menuya Serî',
       settings: 'Mîheng', sound: 'Deng', close: 'Bigire', speak: 'Peyvê bibihîze',
@@ -105,7 +106,7 @@ export function ZombieTypingGame({ vocabulary, language, onWin, onClose }: Zombi
       paused: 'اللعبة متوقفة', pausedSub: 'خذ نفساً.', resume: 'استئناف', mainMenu: 'القائمة الرئيسية',
       settings: 'الإعدادات', sound: 'المؤثرات الصوتية', close: 'إغلاق', speak: 'انطق الكلمة',
     },
-  } as const)[language === 'ku' ? 'ku' : language === 'ar' ? 'ar' : 'en'];
+  });
 
   const [gameState, setGameState] = useState<'start' | 'playing' | 'paused' | 'gameover'>('start');
   const [score, setScore] = useState(0);
@@ -698,7 +699,7 @@ export function ZombieTypingGame({ vocabulary, language, onWin, onClose }: Zombi
                     <bdi>{currentWord.ku}</bdi>
                   </h2>
                   <p className="text-sm text-slate-300 font-semibold">
-                    <bdi>{language !== 'ar' ? (currentWord.en || currentWord.ar) : (currentWord.ar || currentWord.en)}</bdi>
+                    <bdi>{pickLocalized(language, { en: currentWord.en || currentWord.ar, ar: currentWord.ar || currentWord.en, ku: currentWord.en || currentWord.ar })}</bdi>
                   </p>
 
                   {hasMultipleVariants && (

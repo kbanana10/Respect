@@ -1,37 +1,45 @@
 /**
  * AdElements.tsx
- * 
- * Production-ready simulated Google AdMob Banner, Interstitial and Rewarded ads
- * equipped with high-fidelity visuals, mock countdown triggers, and dynamic close controls.
+ *
+ * Ad components with strict Kids Mode suppression:
+ * When `userData?.learnerMode === 'kids'`, ALL ad surfaces (Banner,
+ * Interstitial, Rewarded) return null immediately — 100% ad-free by design.
  */
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdStore } from '../store/adStore';
-import { Play, X, ShieldAlert, Award, AlertCircle, Sparkles, Trophy, Megaphone, Map, Globe, Compass, Gift, Zap } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { useAuth } from '../../../lib/AuthContext';
+import { X, Megaphone, Map, Globe, Compass, Gift, Zap } from 'lucide-react';
+import { motion } from 'motion/react';
+import { useAuth } from '../../../store/AuthContext';
+import { pickLocalized } from '../../../localization/translations';
 
-// Safe Ad Banner placement
+// Safe Ad Banner placement (100% suppressed in Kids Mode)
 export function AdBanner() {
   const { bannersEnabled } = useAdStore();
-  const { language } = useAuth();
+  const { language, userData } = useAuth();
   const [closed, setClosed] = useState(false);
 
-  if (!bannersEnabled || closed) return null;
+  if (userData?.learnerMode === 'kids' || !bannersEnabled || closed) return null;
 
-  const labels = {
+  const labels = pickLocalized(language, {
     en: {
-      sponsored: "Sponsored Advertisement",
-      upgrade: "Ad-free Experience",
-      text: "Upgrade to Quest Premium to disable all ads and unlock advanced Kurdish vocabulary lessons!",
-      button: "Go Ad-Free"
+      sponsored: 'Sponsored Advertisement',
+      upgrade: 'Ad-free Experience',
+      text: 'Support free Kurmanji learning for everyone worldwide.',
+      dismiss: 'Dismiss advertisement',
     },
     ar: {
-      sponsored: "إعلان مدعوم",
-      upgrade: "تجربة خالية من الإعلانات",
-      text: "اشترك في كويست بريميوم لإزالة كافة الإعلانات وبدء تحديات قواعد اللغة المتقدمة!",
-      button: "ترقية الحساب"
-    }
-  }[language !== 'ar' ? 'en' : 'ar'];
+      sponsored: 'إعلان مدعوم',
+      upgrade: 'تجربة خالية من الإعلانات',
+      text: 'ساهم في دعم استمرار تعليم اللغة الكورمانجية مجاناً للجميع.',
+      dismiss: 'إغلاق الإعلان',
+    },
+    ku: {
+      sponsored: 'Reklama Piştgirî',
+      upgrade: 'Ezmûna Bê Reklam',
+      text: 'Piştgiriyê bide fêrbûna belaş a Kurmancî ji bo her kesî.',
+      dismiss: 'Reklamê bigire',
+    },
+  });
 
   return (
     <motion.div
@@ -41,18 +49,19 @@ export function AdBanner() {
     >
       <div className="w-full flex justify-between items-center text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest leading-none">
         <span className="flex items-center gap-1">
-          <Megaphone className="w-3 h-3 text-[#B45309] dark:text-[#FFCE6B]" />
+          <Megaphone className="w-3 h-3 text-[#B45309] dark:text-[#FFCE6B]" aria-hidden="true" />
           {labels.sponsored}
         </span>
-        <button 
+        <button
+          type="button"
           onClick={() => setClosed(true)}
-          aria-label={labels.sponsored ? `Dismiss ${labels.sponsored}` : 'Dismiss ad'}
+          aria-label={labels.dismiss}
           className="min-w-[44px] min-h-[44px] -my-2.5 -me-2 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-all cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
-      
+
       <div className="flex flex-col items-center gap-3 mt-1">
         <div className="bg-indigo-600 text-white rounded-xl w-12 h-12 flex items-center justify-center shrink-0 font-black text-sm shadow-xs">
           Quest
@@ -70,47 +79,62 @@ export function AdBanner() {
   );
 }
 
-// Full Interstitial Ad Modal Player
+// Full Interstitial Ad Modal Player (100% suppressed in Kids Mode)
 export function InterstitialAdModal() {
   const { interstitialActive, closeInterstitial } = useAdStore();
-  const { language } = useAuth();
+  const { language, userData } = useAuth();
   const [countdown, setCountdown] = useState(4);
+  const isKids = userData?.learnerMode === 'kids';
 
   useEffect(() => {
+    if (isKids && interstitialActive) {
+      closeInterstitial();
+      return;
+    }
     if (!interstitialActive) {
       setCountdown(4);
       return;
     }
-
     if (countdown <= 0) return;
 
-    const timer = setTimeout(() => {
-      setCountdown(countdown - 1);
+    const timer = window.setTimeout(() => {
+      setCountdown((prev) => prev - 1);
     }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [interstitialActive, countdown]);
+    return () => window.clearTimeout(timer);
+  }, [interstitialActive, countdown, isKids, closeInterstitial]);
 
-  if (!interstitialActive) return null;
+  if (isKids || !interstitialActive) return null;
 
-  const labels = {
+  const labels = pickLocalized(language, {
     en: {
-      advertisement: "ADVERTISEMENT",
-      title: "Journey to Kurdistan!",
-      info: "Discover historical castles, epic lakes and centuries-old culture with Kurdistan Tourism board.",
-      closing: "Closing in",
-      sec: "s",
-      skip: "Skip Ad"
+      advertisement: 'ADVERTISEMENT',
+      title: 'Journey to Kurdistan!',
+      info: 'Discover historical castles, epic lakes and centuries-old culture across Kurdistan.',
+      closing: 'Closing in',
+      sec: 's',
+      skip: 'Skip Ad',
+      footer: 'Ads help keep Kurmanji learning free. Thank you for learning!',
     },
     ar: {
-      advertisement: "إعلان تجاري للتطبيق",
-      title: "رحلتك إلى كردستان!",
-      info: "اكتشف القلاع التاريخية والبحيرات الرائعة والثقافة القديمة مع هيئة السياحة في كردستان.",
-      closing: "إغلاق في خلال",
-      sec: "ثوانٍ",
-      skip: "تخطي الإعلان"
-    }
-  }[language !== 'ar' ? 'en' : 'ar'];
+      advertisement: 'إعلان مدعوم',
+      title: 'رحلتك إلى كردستان!',
+      info: 'اكتشف القلاع التاريخية والبحيرات الخلابة والثقافة العريقة في كردستان.',
+      closing: 'إغلاق خلال',
+      sec: 'ث',
+      skip: 'تخطي الإعلان',
+      footer: 'تساعد الإعلانات في بقاء المحتوى التعليمي مجانياً للجميع.',
+    },
+    ku: {
+      advertisement: 'REKLAM',
+      title: 'Rêwîtiya Kurdistanê!',
+      info: 'Kelehên dîrokî, golên spehî û çanda kevnar a Kurdistanê keşf bike.',
+      closing: 'Tê girtin di',
+      sec: 'ç',
+      skip: 'Reklamê Derbas Bike',
+      footer: 'Reklam alîkariyê dikin ku fêrbûna Kurmancî belaş bimîne.',
+    },
+  });
 
   return (
     <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-99 flex flex-col items-center justify-between p-6 overflow-hidden text-center text-white select-none">
@@ -118,13 +142,15 @@ export function InterstitialAdModal() {
         <span className="bg-white/10 px-2.5 py-1 text-[9px] font-black tracking-widest rounded-full text-slate-300">
           {labels.advertisement}
         </span>
-        
+
         {countdown > 0 ? (
           <span className="text-xs font-black text-slate-400 bg-white/10 px-3 py-1 rounded-full font-mono">
-            {labels.closing} {countdown}{labels.sec}
+            {labels.closing} {countdown}
+            {labels.sec}
           </span>
         ) : (
           <motion.button
+            type="button"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             onClick={closeInterstitial}
@@ -139,15 +165,15 @@ export function InterstitialAdModal() {
       <div className="max-w-sm flex flex-col items-center gap-6 my-auto">
         <div className="relative">
           <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-3xl" />
-          <motion.div 
+          <motion.div
             animate={{ scale: [1, 1.04, 1] }}
-            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+            transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
             className="w-24 h-24 bg-gradient-to-tr from-amber-400 to-indigo-600 rounded-3xl flex items-center justify-center text-5xl shadow-2xl relative text-white"
           >
             <Globe className="w-12 h-12" />
           </motion.div>
         </div>
-        
+
         <div className="space-y-2">
           <h3 className="text-2xl font-black tracking-tight leading-tight bg-gradient-to-r from-amber-200 to-indigo-300 bg-clip-text text-transparent">
             {labels.title}
@@ -164,8 +190,8 @@ export function InterstitialAdModal() {
           </div>
           <div className="w-[1px] h-8 bg-slate-800" />
           <div className="flex flex-col items-center">
-            <span className="text-amber-400 mb-1"><Compass className="w-6 h-6 animate-spin-slow" /></span>
-            <span className="text-[10px] text-slate-400 font-extrabold">Zend Cave</span>
+            <span className="text-amber-400 mb-1"><Compass className="w-6 h-6" /></span>
+            <span className="text-[10px] text-slate-400 font-extrabold">Şaneder</span>
           </div>
           <div className="w-[1px] h-8 bg-slate-800" />
           <div className="flex flex-col items-center">
@@ -176,62 +202,79 @@ export function InterstitialAdModal() {
       </div>
 
       <div className="text-[10px] text-slate-500 font-medium pb-2 select-none">
-        Ads help fund our servers and free academic content. Thank you for learning Kurmanji!
+        {labels.footer}
       </div>
     </div>
   );
 }
 
-// Rewarded Video/Play Ad Modal Player
+// Rewarded Ad Modal Player (100% suppressed in Kids Mode)
 export function RewardedAdModal() {
   const { rewardedActive, closeRewarded } = useAdStore();
-  const { language } = useAuth();
+  const { language, userData } = useAuth();
   const [countdown, setCountdown] = useState(5);
   const [isFinished, setIsFinished] = useState(false);
+  const isKids = userData?.learnerMode === 'kids';
 
   useEffect(() => {
+    if (isKids && rewardedActive) {
+      closeRewarded(false);
+      return;
+    }
     if (!rewardedActive) {
       setCountdown(5);
       setIsFinished(false);
       return;
     }
-
     if (countdown <= 0) {
       setIsFinished(true);
       return;
     }
 
-    const timer = setTimeout(() => {
-      setCountdown(countdown - 1);
+    const timer = window.setTimeout(() => {
+      setCountdown((prev) => prev - 1);
     }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [rewardedActive, countdown]);
+    return () => window.clearTimeout(timer);
+  }, [rewardedActive, countdown, isKids, closeRewarded]);
 
-  if (!rewardedActive) return null;
+  if (isKids || !rewardedActive) return null;
 
-  const labels = {
+  const labels = pickLocalized(language, {
     en: {
-      heading: "WATCHING SPONSORED REWARD",
-      rewarding: "REWARD UNLOCKED",
-      sub: "Watch this video helper to claim +50 XP bonus instantly!",
-      bonusUnlocked: "Congratulations! +50 XP Bonus credited to your account profile.",
-      sec: "s",
-      claimButton: "Claim Reward +50 XP",
-      watchingAd: "Watching ad content...",
-      quit: "Quit (Lose Bonus)"
+      heading: 'WATCHING SPONSORED REWARD',
+      rewarding: 'REWARD UNLOCKED',
+      sub: 'Watch this short clip to claim +50 XP bonus instantly!',
+      bonusUnlocked: 'Congratulations! +50 XP Bonus credited to your profile.',
+      sec: 's remaining',
+      claimButton: 'Claim Reward +50 XP',
+      watchingAd: 'Loading reward clip...',
+      quit: 'Quit (Lose Bonus)',
+      footer: 'Reward partners help keep educational content free.',
     },
     ar: {
-      heading: "جاري عرض إعلان المكافأة",
-      rewarding: "تم تفعيل المكافأة",
-      sub: "شاهد هذا المقطع القصير للحصول على +50 نقطة خبرة إضافية فوراً!",
-      bonusUnlocked: "تهانينا! تم إضافة مكافأة بقيمة +50 نقطة خبرة لإحصائيات حسابك.",
-      sec: "ثوانٍ",
-      claimButton: "الحصول على +50 نقطة خبرة",
-      watchingAd: "جاري تحميل الإعلان التجاري...",
-      quit: "الخروج (خسارة المكافأة)"
-    }
-  }[language !== 'ar' ? 'en' : 'ar'];
+      heading: 'جاري عرض إعلان المكافأة',
+      rewarding: 'تم تفعيل المكافأة',
+      sub: 'شاهد هذا المقطع القصير للحصول على +50 نقطة خبرة إضافية فوراً!',
+      bonusUnlocked: 'تهانينا! تم إضافة مكافأة بقيمة +50 نقطة خبرة لحسابك.',
+      sec: 'ثوانٍ متبقية',
+      claimButton: 'الحصول على +50 نقطة خبرة',
+      watchingAd: 'جاري عرض المكافأة...',
+      quit: 'خروج (إلغاء المكافأة)',
+      footer: 'تساعد المكافآت في إبقاء المحتوى التعليمي مجانياً.',
+    },
+    ku: {
+      heading: 'XELATA PIŞTGIRÎ TÊ NÎŞANDAN',
+      rewarding: 'XELAT HATE VEKIRIN',
+      sub: 'Vê vîdyoya kurt temaşe bike û yekser +50 XP qezenc bike!',
+      bonusUnlocked: 'Pîroz be! +50 XP li profîla te hate zêdekirin.',
+      sec: 'çirke maye',
+      claimButton: '+50 XP Wergire',
+      watchingAd: 'Xelat tê barkirin...',
+      quit: 'Derkeve (Xelat Windakirî)',
+      footer: 'Hevkarên xelatan fêrbûnê ji bo her kesî belaş dihêlin.',
+    },
+  });
 
   return (
     <div className="fixed inset-0 bg-slate-950/98 backdrop-blur-lg z-99 flex flex-col items-center justify-between p-6 text-center text-white select-none">
@@ -239,15 +282,16 @@ export function RewardedAdModal() {
         <span className="bg-amber-500/20 text-amber-300 border border-amber-500/20 px-2.5 py-1 text-[9px] font-black tracking-widest rounded-full">
           {labels.heading}
         </span>
-        
+
         {isFinished ? (
           <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 text-[9px] font-bold tracking-wider rounded-full uppercase">
             {labels.rewarding}
           </span>
         ) : (
           <button
+            type="button"
             onClick={() => closeRewarded(false)}
-            className="p-1 px-3 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl cursor-copy border-none"
+            className="p-1 px-3 bg-white/10 hover:bg-white/20 text-xs font-bold rounded-xl cursor-pointer border-none"
           >
             {labels.quit}
           </button>
@@ -258,12 +302,16 @@ export function RewardedAdModal() {
         <div className="relative">
           <div className="absolute inset-0 bg-amber-400/25 rounded-full blur-3xl" />
           <motion.div
-            animate={{ 
+            animate={{
               scale: isFinished ? [1, 1.12, 1] : 1,
-              rotate: isFinished ? [0, 10, -10, 360] : 0
+              rotate: isFinished ? [0, 10, -10, 360] : 0,
             }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-            className={`w-28 h-28 ${isFinished ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white' : 'bg-gradient-to-tr from-amber-500 to-orange-400 text-white'} rounded-full flex items-center justify-center shadow-2xl relative border-2 border-white/20`}
+            transition={{ duration: 1.5, ease: 'easeInOut' }}
+            className={`w-28 h-28 ${
+              isFinished
+                ? 'bg-gradient-to-tr from-emerald-500 to-teal-400 text-white'
+                : 'bg-gradient-to-tr from-amber-500 to-orange-400 text-white'
+            } rounded-full flex items-center justify-center shadow-2xl relative border-2 border-white/20`}
           >
             {isFinished ? (
               <Gift className="w-12 h-12 text-white" />
@@ -282,22 +330,22 @@ export function RewardedAdModal() {
           </p>
         </div>
 
-        {/* Action button inside dialog */}
         <div className="w-full">
           {!isFinished ? (
             <div className="space-y-2.5">
               <div className="w-full bg-slate-900 border border-slate-800 h-3 rounded-full overflow-hidden p-0.5">
-                <div 
+                <div
                   className="bg-amber-400 h-full rounded-full transition-all duration-1000 ease-linear"
                   style={{ width: `${((5 - countdown) / 5) * 100}%` }}
                 />
               </div>
               <span className="text-xs font-black text-amber-400 font-mono">
-                {countdown} {labels.sec} remaining
+                {countdown} {labels.sec}
               </span>
             </div>
           ) : (
             <motion.button
+              type="button"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => closeRewarded(true)}
@@ -310,7 +358,7 @@ export function RewardedAdModal() {
       </div>
 
       <div className="text-[10px] text-slate-500 font-medium pb-2 select-none">
-        Reward partners make educational access entirely free. Claim your points and power up!
+        {labels.footer}
       </div>
     </div>
   );

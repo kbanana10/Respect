@@ -160,13 +160,14 @@ class SyncEngine {
         try {
           const docSnap = await getDoc(userRef);
           if (docSnap.exists()) {
+            // SAFETY: Firestore `users/{uid}` documents store UserData; migrateUserData validates all fields before merge.
             const remoteData = docSnap.data() as UserData;
             const outcome = reconcileUserData(currentLocal, remoteData);
             targetData = outcome.merged;
             this.lastConflict = outcome.summary.hadDivergence ? outcome.summary : null;
           }
         } catch (fetchErr) {
-          log.warn('Remote fetch skipped before push; proceeding with local state', { err: fetchErr });
+          log.warn('Remote fetch skipped before push; proceeding with local state', { err: fetchErr instanceof Error ? fetchErr : String(fetchErr) });
         }
 
         await offlineStorage.saveUserData(targetData);
@@ -183,7 +184,7 @@ class SyncEngine {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sync failed';
       this.lastError = message;
-      log.warn('SyncEngine processQueue failed; scheduling exponential backoff', { err });
+      log.warn('SyncEngine processQueue failed; scheduling exponential backoff', { err: err instanceof Error ? err : String(err) });
       for (const mut of eligible) {
         await offlineStorage.markMutationFailed(mut.id, message);
       }

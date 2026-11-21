@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { WRITING_SENTENCES } from '../data/writingSentences';
 import { Modal, Button } from '../components/ui';
 import TracingCanvas, { type TracingCanvasHandle } from '../components/TracingCanvas';
@@ -18,6 +18,7 @@ import {
 } from '../lib/traceLetters';
 import { recordReview, type ReviewDeck } from '../services/SpacedRepetitionService';
 import { Eraser, RotateCcw, CheckCircle2, XCircle, ChevronRight, Check } from 'lucide-react';
+import { pickLocalized } from '../localization/translations';
 
 /**
  * Sentence-tracing layout. The full sentence is shown faintly with a dashed
@@ -241,24 +242,21 @@ export function WritingSentenceTracingPage() {
     navigate(`/writing/sentences/${next.id}`, { replace: true });
   }, [navigate, sentence.id]);
 
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
+  const clearLabel = pickLocalized(language, { ku: 'Paqij bike', ar: 'مسح الكل', en: 'Clear' });
+  const undoLabel = pickLocalized(language, { ku: 'Vegere', ar: 'تراجع', en: 'Undo' });
+  const checkLabel = pickLocalized(language, { ku: 'Kontrol', ar: 'تحقق', en: 'Check' });
+  const nextLabel = pickLocalized(language, { ku: 'Ya din', ar: 'جملة تالية', en: 'Next sentence' });
+  const keepDrawingLabel = pickLocalized(language, { ku: 'Temam bike', ar: 'أكمل', en: 'Keep drawing' });
 
-  const clearLabel = isKu ? 'Paqij bike' : isAr ? 'مسح الكل' : 'Clear';
-  const undoLabel = isKu ? 'Vegere' : isAr ? 'تراجع' : 'Undo';
-  const checkLabel = isKu ? 'Kontrol' : isAr ? 'تحقق' : 'Check';
-  const nextLabel = isKu ? 'Ya din' : isAr ? 'جملة تالية' : 'Next sentence';
-  const keepDrawingLabel = isKu ? 'Temam bike' : isAr ? 'أكمل' : 'Keep drawing';
-
-  const failTitle = isKu ? 'Dîsa biceribîne ❌' : isAr ? 'حاول مرة أخرى ❌' : 'Try again ❌';
-  const passTitle = isKu ? 'Baş e! Hevok temam ✅' : isAr ? 'أحسنت! اكتملت الجملة ✅' : 'Well done! Sentence complete ✅';
+  const failTitle = pickLocalized(language, { ku: 'Dîsa biceribîne ❌', ar: 'حاول مرة أخرى ❌', en: 'Try again ❌' });
+  const passTitle = pickLocalized(language, { ku: 'Baş e! Hevok temam ✅', ar: 'أحسنت! اكتملت الجملة ✅', en: 'Well done! Sentence complete ✅' });
 
   const percentText = (fraction: number) => `${Math.round(fraction * 100)}%`;
-  const thresholdText = isKu
-    ? `divê dagirtin ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, her herêm ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, derveyî ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`
-    : isAr
-      ? `التغطية ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}٪، كل منطقة ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}٪، خارج المسار ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}٪`
-      : `coverage ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, each zone ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, outside ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`;
+  const thresholdText = pickLocalized(language, {
+    ku: `divê dagirtin ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, her herêm ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, derveyî ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`,
+    ar: `التغطية ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}٪، كل منطقة ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}٪، خارج المسار ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}٪`,
+    en: `coverage ≥ ${Math.round(OVERALL_COVERAGE_MIN * 100)}%, each zone ≥ ${Math.round(ZONE_COVERAGE_MIN * 100)}%, outside ≤ ${Math.round(OUT_OF_BOUNDS_MAX * 100)}%`,
+  });
 
   return (
     <div className="p-4 flex flex-col min-h-screen pb-24">
@@ -268,15 +266,15 @@ export function WritingSentenceTracingPage() {
           <h2 className="text-xl font-black text-ink leading-none">
             <span dir="ltr" className="font-mono">{sentence.ku}</span>
             <span className="text-sm font-black text-muted ms-2">
-              {isAr ? sentence.ar : sentence.en}
+              {pickLocalized(language, { en: sentence.en, ar: sentence.ar, ku: sentence.en })}
             </span>
           </h2>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1.5">
-            {isKu
-              ? 'Hemû hevokê bikşîne, paşê Kontrol bike'
-              : isAr
-                ? 'ارسم الجملة كلها ثم اضغط تحقق'
-                : 'Draw the whole sentence, then tap Check'}
+            {pickLocalized(language, {
+              ku: 'Hemû hevokê bikşîne, paşê Kontrol bike',
+              ar: 'ارسم الجملة كلها ثم اضغط تحقق',
+              en: 'Draw the whole sentence, then tap Check',
+            })}
           </p>
         </div>
         <button
@@ -284,12 +282,15 @@ export function WritingSentenceTracingPage() {
           onClick={() => navigate('/writing/sentences')}
           className="text-[10px] font-black text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 uppercase tracking-wider cursor-pointer bg-transparent border-none min-h-[44px] px-2"
         >
-          {isKu ? 'Hemû hevok' : isAr ? 'كل الجُمل' : 'All sentences'}
+          {pickLocalized(language, { ku: 'Hemû hevok', ar: 'كل الجُمل', en: 'All sentences' })}
         </button>
       </div>
 
       {/* Per-word status chips — show post-check state (✅ / ❌ / ⏳) */}
-      <div className="flex items-center justify-center gap-1.5 mb-3" aria-label={isAr ? 'حالة الكلمات' : 'Word status'}>
+      <div
+        className="flex items-center justify-center gap-1.5 mb-3"
+        aria-label={pickLocalized(language, { ku: 'Rewşa peyvan', ar: 'حالة الكلمات', en: 'Word status' })}
+      >
         {layout.lanes.map((lane, i) => (
           <span
             key={`${sentence.id}-${lane.index}`}
@@ -369,7 +370,10 @@ export function WritingSentenceTracingPage() {
         hideCloseButton
       >
         <div className="flex flex-col gap-3">
-          <div className="flex flex-wrap gap-1.5 justify-center" aria-label={isAr ? 'نتيجة كل كلمة' : 'Per-word result'}>
+          <div
+            className="flex flex-wrap gap-1.5 justify-center"
+            aria-label={pickLocalized(language, { ku: 'Encama her peyvê', ar: 'نتيجة كل كلمة', en: 'Per-word result' })}
+          >
             {layout.lanes.map((lane, i) => (
               <span
                 key={lane.text + String(i)}
@@ -388,11 +392,11 @@ export function WritingSentenceTracingPage() {
 
           {!allPassed && (
             <p className="text-[11px] font-semibold text-muted leading-relaxed text-center">
-              {isKu
-                ? `${words.length - passedCount} peyv hîn ne temam e. Deverên sor temam bike û dîsa Kontrol bike.`
-                : isAr
-                  ? `بقي ${words.length - passedCount} كلمات غير مكتملة. أكمل المناطق الحمراء ثم اضغط تحقق مرة أخرى.`
-                  : `${words.length - passedCount} word${words.length - passedCount === 1 ? '' : 's'} still need work. Fill the red areas, then Check again.`}
+              {pickLocalized(language, {
+                ku: `${words.length - passedCount} peyv hîn ne temam e. Deverên sor temam bike û dîsa Kontrol bike.`,
+                ar: `بقي ${words.length - passedCount} كلمات غير مكتملة. أكمل المناطق الحمراء ثم اضغط تحقق مرة أخرى.`,
+                en: `${words.length - passedCount} word${words.length - passedCount === 1 ? '' : 's'} still need work. Fill the red areas, then Check again.`,
+              })}
             </p>
           )}
 

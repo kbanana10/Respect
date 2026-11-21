@@ -1,14 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../lib/AuthContext';
+import { useAuth } from '../store/AuthContext';
 import { motion } from 'motion/react';
 import { Sparkles, PenTool, ChevronRight, Users, Zap, Tag, ListTree, Link, CheckCircle2 } from 'lucide-react';
 import { SUBJECT_ACCENTS } from '../constants/subjectAccents';
 import { GRAMMAR_LESSONS } from '../data/grammar';
 import { lessonCompletionPercent, grammarLessonKey } from '../lib/grammar/grammarScoring';
 import type { ReviewDeck } from '../services/SpacedRepetitionService';
-
-type Language = 'en' | 'ar' | 'ku';
+import { pickLocalized } from '../localization/translations';
+import type { Language } from '../models/user';
 
 /**
  * Grammar (Rêziman) sub-category hub. Five cards open the numbered lessons
@@ -90,13 +90,11 @@ const GRAMMAR_SUB_CATEGORIES: GrammarSubCategory[] = [
 const gramCount = GRAMMAR_SUB_CATEGORIES.length;
 
 function subTitle(sub: GrammarSubCategory, lang: Language): string {
-  if (lang === 'ar') return sub.ar;
-  return lang === 'ku' ? sub.ku : sub.en;
+  return pickLocalized(lang, { en: sub.en, ar: sub.ar, ku: sub.ku });
 }
 
 function subDescription(sub: GrammarSubCategory, lang: Language): string {
-  if (lang === 'ar') return sub.arDesc;
-  return lang === 'ku' ? sub.kuDesc : sub.enDesc;
+  return pickLocalized(lang, { en: sub.enDesc, ar: sub.arDesc, ku: sub.kuDesc });
 }
 
 const ACCENT = SUBJECT_ACCENTS.grammar;
@@ -104,8 +102,6 @@ const ACCENT = SUBJECT_ACCENTS.grammar;
 export function Grammar() {
   const navigate = useNavigate();
   const { language, userData } = useAuth();
-  const isAr = language === 'ar';
-  const isKu = language === 'ku';
 
   const deck: ReviewDeck = userData?.reviewDeck ?? {};
   const completed = userData?.completedLessons ?? [];
@@ -133,17 +129,17 @@ export function Grammar() {
         <div className="space-y-2 relative z-10 text-start">
           <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider flex items-center gap-1 w-max ${ACCENT.well} ${ACCENT.icon}`}>
             <Sparkles className="w-3.5 h-3.5" />
-            {isKu ? 'RÊZIMAN' : isAr ? 'قواعد اللغة' : 'GRAMMAR'}
+            {pickLocalized(language, { ku: 'RÊZIMAN', ar: 'قواعد اللغة', en: 'GRAMMAR' })}
           </span>
           <h3 className="text-2xl font-black mt-2 leading-tight tracking-tight text-ink">
-            {isKu ? 'Rêziman' : isAr ? 'النحو' : 'Grammar'}
+            {pickLocalized(language, { ku: 'Rêziman', ar: 'النحو', en: 'Grammar' })}
           </h3>
           <p className="text-muted text-[11px] leading-relaxed font-semibold">
-            {isKu
-              ? 'Bingehên rêzimanê: cînavk, lêker, navdêr, hevoksazî û daçek.'
-              : isAr
-                ? 'أساسيات القواعد: الضمائر، الأفعال، الأسماء، تركيب الجملة وحروف الجر.'
-                : 'Grammar basics — pronouns, verbs, nouns, sentence structure and prepositions.'}
+            {pickLocalized(language, {
+              ku: 'Bingehên rêzimanê: cînavk, lêker, navdêr, hevoksazî û daçek.',
+              ar: 'أساسيات القواعد: الضمائر، الأفعال، الأسماء، تركيب الجملة وحروف الجر.',
+              en: 'Grammar basics — pronouns, verbs, nouns, sentence structure and prepositions.',
+            })}
           </p>
         </div>
       </div>
@@ -189,7 +185,9 @@ export function Grammar() {
                     {info.done && (
                       <span className="inline-flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                        <span className="sr-only">{isKu ? 'Qediya' : isAr ? 'مكتمل' : 'Done'}</span>
+                        <span className="sr-only">
+                          {pickLocalized(language, { ku: 'Qediya', ar: 'مكتمل', en: 'Done' })}
+                        </span>
                       </span>
                     )}
                   </div>
@@ -198,7 +196,7 @@ export function Grammar() {
             })()}
 
             <span className="text-[10px] font-black text-[#8A6100] dark:text-[#FFCE6B] flex items-center gap-1 mt-0.5">
-              {isKu ? 'Veke' : isAr ? 'افتح' : 'Open'}
+              {pickLocalized(language, { ku: 'Veke', ar: 'افتح', en: 'Open' })}
               <ChevronRight className="w-3 h-3 rtl:-scale-x-100" />
             </span>
           </motion.button>
@@ -207,14 +205,18 @@ export function Grammar() {
 
       {/* Footer note — real progress summary now that lessons are live */}
       <p className="max-w-4xl mx-auto text-center text-[10px] text-slate-400 dark:text-slate-500 font-semibold flex items-center justify-center gap-1" aria-live="polite">
-        {isKu
-          ? `${gramCount} mijar — veke û dest bi fêrbûnê bike`
-          : isAr
-            ? `${gramCount} مواضيع — افتح وابدأ التعلّم`
-            : `${gramCount} topics — open one to start learning`}
+        {pickLocalized(language, {
+          ku: `${gramCount} mijar — veke û dest bi fêrbûnê bike`,
+          ar: `${gramCount} مواضيع — افتح وابدأ التعلّم`,
+          en: `${gramCount} topics — open one to start learning`,
+        })}
         {anyProgress && (
           <span className="text-emerald-500 font-black">
-            {isKu ? '· pêşketin hatiye tomarkirin' : isAr ? '· تم تسجيل التقدم' : '· progress saved'}
+            {pickLocalized(language, {
+              ku: '· pêşketin hatiye tomarkirin',
+              ar: '· تم تسجيل التقدم',
+              en: '· progress saved',
+            })}
           </span>
         )}
       </p>

@@ -17,18 +17,20 @@ export enum AppErrorCode {
   UNKNOWN = 'UNKNOWN',
 }
 
+export type ErrorCause = Error | string | null | undefined;
+
 export interface AppErrorOptions {
   code: AppErrorCode;
   message: string;
   recoverable?: boolean;
-  cause?: unknown;
+  cause?: ErrorCause;
   context?: Record<string, string | number | boolean>;
 }
 
 export class AppError extends Error {
   public readonly code: AppErrorCode;
   public readonly recoverable: boolean;
-  public readonly cause?: unknown;
+  public readonly cause?: ErrorCause;
   public readonly context?: Record<string, string | number | boolean>;
   public readonly timestamp: number;
 
@@ -43,8 +45,8 @@ export class AppError extends Error {
   }
 }
 
-export function toAppError(
-  error: unknown,
+function normalizeError(
+  error: ErrorCause,
   fallbackCode: AppErrorCode = AppErrorCode.UNKNOWN,
   fallbackMessage = 'Unexpected error',
 ): AppError {
@@ -58,14 +60,21 @@ export function toAppError(
       cause: error,
     });
   }
+  if (error !== null && error !== undefined && String(error).trim().length > 0) {
+    return new AppError({
+      code: fallbackCode,
+      message: String(error),
+      cause: error,
+    });
+  }
   return new AppError({
     code: fallbackCode,
-    message: typeof error === 'string' && error.trim() ? error : fallbackMessage,
+    message: fallbackMessage,
     cause: error,
   });
 }
 
-const USER_MESSAGES: Record<AppErrorCode, Record<Language, string>> = {
+const USER_MESSAGES = {
   [AppErrorCode.NETWORK_OFFLINE]: {
     en: 'You are offline. Your progress is safely saved on this device.',
     ar: 'أنت غير متصل بالإنترنت. تم حفظ تقدمك بأمان على جهازك.',
@@ -121,9 +130,9 @@ const USER_MESSAGES: Record<AppErrorCode, Record<Language, string>> = {
     ar: 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
     ku: 'Tiştêk şaş çû. Ji kerema xwe dîsa biceribîne.',
   },
-};
+} satisfies Record<AppErrorCode, Record<Language, string>>;
 
-export function getUserErrorMessage(error: unknown, language: Language): string {
-  const appErr = toAppError(error);
+export function getUserErrorMessage(error: ErrorCause, language: Language): string {
+  const appErr = normalizeError(error);
   return USER_MESSAGES[appErr.code]?.[language] ?? USER_MESSAGES[AppErrorCode.UNKNOWN][language];
 }
