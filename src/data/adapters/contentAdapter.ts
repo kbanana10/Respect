@@ -26,7 +26,7 @@ let _lemmaCache: VocabularyLemma[] | null = null;
 /**
  * Get all vocabulary lemmas combined and normalized (memoised)
  */
-function getAllVocabularyLemmas(): VocabularyLemma[] {
+export function getAllVocabularyLemmas(): VocabularyLemma[] {
   if (_lemmaCache) return _lemmaCache;
   const map = new Map<string, VocabularyLemma>();
 

@@ -416,12 +416,12 @@ body {
   color: #ffffff !important;
 }
 
-/* Brand gradients (hero cards, CTAs) → Sun Gold gradient, warm-dark content.
+/* Brand gradients (hero cards, CTAs) → Active Theme Accent gradient.
    Only strong brand shades (500–800) — subtle 50/100 washes keep their tint. */
 :is(.from-indigo-500, .from-indigo-600, .from-indigo-700, .from-indigo-800,
     .from-violet-500, .from-violet-600, .from-violet-700,
     .via-indigo-600, .via-indigo-700, .via-violet-600)[class*="bg-gradient"]:not(.bg-clip-text) {
-  background: linear-gradient(135deg, #FFC541, #FFB300 45%, #FFA000) !important;
+  background: linear-gradient(135deg, var(--kq-gold), var(--kq-gold-dark)) !important;
   color: var(--kq-gold-on) !important;
   border-color: transparent !important;
 }
@@ -432,9 +432,9 @@ body {
   color: var(--kq-gold-on) !important;
 }
 
-/* Gradient-clipped display text keeps its clipping, recoloured to deep gold */
+/* Gradient-clipped display text keeps its clipping, recoloured to active accent */
 .bg-clip-text:is(.from-indigo-500, .from-indigo-600, .from-indigo-700, .from-violet-500, .from-violet-600, .from-violet-700) {
-  background: linear-gradient(90deg, #E69500, #B8860B) !important;
+  background: linear-gradient(90deg, var(--kq-gold-dark), var(--kq-gold-text)) !important;
   -webkit-background-clip: text !important;
   background-clip: text !important;
   color: transparent !important;

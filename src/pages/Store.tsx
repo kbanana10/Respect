@@ -15,6 +15,7 @@ import { useAuth } from '../store/AuthContext';
 import { t, pickLocalized } from '../localization/translations';
 import { AVATARS } from '../constants/appConstants';
 import type { ThemeAccent } from '../models/user';
+import { playRewardSound, playTapSound, playFailureSound } from '../features/audio/hooks/useAudio';
 
 const FREEZE_COST = 100;
 
@@ -40,15 +41,19 @@ const STICKER_REWARDS = [
 ] as const;
 
 const AVATAR_SHOP_COSTS = {
-  av1: 0,
-  av2: 0,
-  av3: 40,
-  av4: 50,
-  av5: 60,
-  av6: 60,
-  av7: 70,
-  av8: 80,
+  'av-1': 0,
+  'av-2': 0,
+  'av-3': 40,
+  'av-4': 50,
+  'av-5': 60,
+  'av-6': 60,
+  'av-7': 70,
+  'av-8': 80,
 } satisfies Record<string, number>;
+
+function normalizeAvatarId(id: string): string {
+  return /^av\d+$/.test(id) ? `av-${id.slice(2)}` : id;
+}
 
 const AVATAR_ICON_MAP = {
   user: User,
@@ -66,8 +71,8 @@ export function Store() {
   const gems = userData?.gems ?? 0;
   const freezes = userData?.streakFreezes ?? 0;
   const activeAccent: ThemeAccent = userData?.activeAccent ?? 'gold';
-  const activeAvatar = userData?.avatarId ?? AVATARS[0].id;
-  const unlockedAvatars = userData?.unlockedAvatars ?? ['av1', 'av2'];
+  const activeAvatar = normalizeAvatarId(userData?.avatarId ?? AVATARS[0].id);
+  const unlockedAvatars = (userData?.unlockedAvatars ?? ['av-1', 'av-2']).map(normalizeAvatarId);
   const unlockedStickers = userData?.unlockedStickers ?? [];
   const [toast, setToast] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -89,12 +94,14 @@ export function Store() {
   const buyFreeze = async () => {
     if (busy) return;
     if (gems < FREEZE_COST) {
+      playFailureSound();
       showToast(t(language, 'store_not_enough'));
       return;
     }
     setBusy(true);
     try {
       await updateUserData({ gems: gems - FREEZE_COST, streakFreezes: freezes + 1 });
+      playRewardSound();
       showToast(t(language, 'store_freeze_bought'));
     } finally {
       setBusy(false);
@@ -105,6 +112,7 @@ export function Store() {
     if (busy) return;
     const owned = cost === 0 || unlockedAvatars.includes(avId);
     if (owned) {
+      playTapSound(0);
       await updateUserData({ avatarId: avId });
       showToast(
         pickLocalized(language, {
@@ -116,6 +124,7 @@ export function Store() {
       return;
     }
     if (gems < cost) {
+      playFailureSound();
       showToast(t(language, 'store_not_enough'));
       return;
     }
@@ -126,6 +135,7 @@ export function Store() {
         unlockedAvatars: [...unlockedAvatars, avId],
         avatarId: avId,
       });
+      playRewardSound();
       showToast(
         pickLocalized(language, {
           en: 'New avatar unlocked & equipped!',
@@ -143,6 +153,7 @@ export function Store() {
     const stickerKey = `accent_${accent}`;
     const owned = cost === 0 || unlockedStickers.includes(stickerKey);
     if (owned) {
+      playTapSound(0);
       await updateUserData({ activeAccent: accent });
       showToast(
         pickLocalized(language, {
@@ -154,6 +165,7 @@ export function Store() {
       return;
     }
     if (gems < cost) {
+      playFailureSound();
       showToast(t(language, 'store_not_enough'));
       return;
     }
@@ -164,6 +176,7 @@ export function Store() {
         unlockedStickers: [...unlockedStickers, stickerKey],
         activeAccent: accent,
       });
+      playRewardSound();
       showToast(
         pickLocalized(language, {
           en: 'New theme accent unlocked!',
@@ -179,6 +192,7 @@ export function Store() {
   const handleStickerUnlock = async (stickerId: string, cost: number) => {
     if (busy || unlockedStickers.includes(stickerId)) return;
     if (gems < cost) {
+      playFailureSound();
       showToast(t(language, 'store_not_enough'));
       return;
     }
@@ -188,6 +202,7 @@ export function Store() {
         gems: gems - cost,
         unlockedStickers: [...unlockedStickers, stickerId],
       });
+      playRewardSound();
       showToast(
         pickLocalized(language, {
           en: 'Sticker added to your collection!',
@@ -268,7 +283,7 @@ export function Store() {
       {/* Theme Accents */}
       <section className="space-y-3">
         <h2 className="text-sm font-black text-ink px-1 uppercase tracking-wider flex items-center gap-2">
-          <Palette className="w-4 h-4 text-[#FFB300]" aria-hidden="true" />
+          <Palette className="w-4 h-4 text-[var(--kq-gold)]" aria-hidden="true" />
           {t(language, 'store_accents')}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -284,8 +299,8 @@ export function Store() {
                 onClick={() => void handleAccentAction(item.id, item.cost)}
                 className={`p-4 rounded-3xl border-2 bg-white dark:bg-slate-900 flex flex-col items-center gap-2.5 text-center transition-all cursor-pointer ${
                   equipped
-                    ? 'border-[#FFB300] bg-[#FFF6E0] dark:bg-[#3A2F14]'
-                    : 'border-line-soft dark:border-slate-800 hover:border-[#FFB300]/50'
+                    ? 'border-[var(--kq-gold)] bg-[var(--kq-surface-2)]'
+                    : 'border-line-soft dark:border-slate-800 hover:border-[var(--kq-gold)]/50'
                 }`}
               >
                 <span className={`w-10 h-10 rounded-full ${item.swatch} shadow-sm`} aria-hidden="true" />
@@ -296,7 +311,7 @@ export function Store() {
                       ? 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300'
                       : owned
                         ? 'bg-slate-100 dark:bg-slate-800 text-ink'
-                        : 'bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B]'
+                        : 'bg-[var(--kq-surface-2)] text-[var(--kq-gold-text)]'
                   }`}
                 >
                   {equipped
@@ -335,8 +350,8 @@ export function Store() {
                 onClick={() => void handleAvatarAction(av.id, cost)}
                 className={`p-3 rounded-3xl border-2 bg-white dark:bg-slate-900 flex flex-col items-center gap-2 transition-all cursor-pointer ${
                   equipped
-                    ? 'border-[#FFB300] shadow-md'
-                    : 'border-line-soft dark:border-slate-800 hover:border-[#FFB300]/50'
+                    ? 'border-[var(--kq-gold)] shadow-md'
+                    : 'border-line-soft dark:border-slate-800 hover:border-[var(--kq-gold)]/50'
                 }`}
               >
                 <span className={`w-12 h-12 rounded-2xl flex items-center justify-center ${av.color}`}>

@@ -392,6 +392,11 @@ export function generateQuestionsForModule(
     const matchedWords = deduplicatedUniverse.filter(w => targetIds.includes(w.id));
     poolWords = matchedWords;
     reviewLetterPool = alphabet.filter(l => targetIds.includes(l.id));
+  } else if (moduleId === 'all') {
+    poolWords = buildAdaptivePool(userData);
+    if (poolWords.length === 0) {
+      poolWords = deduplicatedUniverse;
+    }
   } else if (matchedLessonWords.length > 0) {
     poolWords = matchedLessonWords;
   } else {
@@ -446,25 +451,27 @@ export function generateQuestionsForModule(
   // Adaptive difficulty inputs (used below when picking question types).
   const adaptiveWrongSet = new Set(userData?.wrongAnswersHistory || []);
 
+  type ConcreteType = 'translate' | 'multiple_choice' | 'true_false' | 'emoji' | 'scrambled_letters' | 'sentence_reorder' | 'fill_blank';
+  const mixedAllowedTypes: ConcreteType[] =
+    levelId === 'A1'
+      ? ['multiple_choice', 'emoji', 'true_false']
+      : levelId === 'A2'
+        ? ['multiple_choice', 'scrambled_letters', 'true_false', 'fill_blank', 'emoji']
+        : levelId === 'B1'
+          ? ['multiple_choice', 'scrambled_letters', 'fill_blank', 'sentence_reorder', 'true_false']
+          : levelId === 'B2' || levelId === 'Advanced'
+            ? ['multiple_choice', 'translate', 'fill_blank', 'sentence_reorder', 'scrambled_letters', 'true_false']
+            : ['multiple_choice', 'scrambled_letters', 'true_false'];
+  const mixedTypeOrder = shuffle(mixedAllowedTypes);
+
   const wordQuestions: Question[] = finalSubset.map((w, idx) => {
     const itemCategory = w.category || w.categoryId || 'general';
     const itemEmoji = w.emoji || '🎓';
     
-    type ConcreteType = 'translate' | 'multiple_choice' | 'true_false' | 'emoji' | 'scrambled_letters' | 'sentence_reorder' | 'fill_blank';
     let qType: ConcreteType = 'multiple_choice';
     
     if (selectedQuizMode === 'mixed_challenge') {
-      let allowedTypes: ConcreteType[] = ['multiple_choice', 'scrambled_letters', 'true_false'];
-      if (levelId === 'A1') {
-        allowedTypes = ['multiple_choice', 'emoji', 'true_false'];
-      } else if (levelId === 'A2') {
-        allowedTypes = ['multiple_choice', 'scrambled_letters', 'true_false', 'fill_blank', 'emoji'];
-      } else if (levelId === 'B1') {
-        allowedTypes = ['multiple_choice', 'scrambled_letters', 'fill_blank', 'sentence_reorder', 'true_false'];
-      } else if (levelId === 'B2' || levelId === 'Advanced') {
-        allowedTypes = ['multiple_choice', 'translate', 'fill_blank', 'sentence_reorder', 'scrambled_letters', 'true_false'];
-      }
-      qType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+      qType = mixedTypeOrder[idx % mixedTypeOrder.length];
     } else if (selectedQuizMode === 'adaptive_practice') {
       // ADAPTIVE PRACTICE: the type mix follows the learner's current level,
       // then bends per word — struggling words get gentle recognition

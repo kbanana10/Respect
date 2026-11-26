@@ -446,7 +446,7 @@ export function ZombieTypingGame({ vocabulary, language, onWin, onClose }: Zombi
         tone={gameState === 'start' ? 'light' : 'dark'}
         title={zt.title}
         onExit={onClose}
-        exitLabel={zt.mainMenu}
+        exitLabel={zt.backHome}
         indicator={(gameState === 'playing' || gameState === 'paused') ? (
           <span className="flex items-center gap-0.5">
             {[1, 2, 3].map((h) => (

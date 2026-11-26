@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../store/AuthContext';
 import { useNavigate } from 'react-router';
 import { pickLocalized } from '../localization/translations';
@@ -101,6 +101,15 @@ export function LeaderboardPage() {
   const [boardData, setBoardData] = useState<LeaderboardEntry[]>([]);
   const [simulationPulse, setSimulationPulse] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const pulseTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pulseTimerRef.current !== null) {
+        window.clearTimeout(pulseTimerRef.current);
+      }
+    };
+  }, []);
 
   const isKidsMode = userData?.learnerMode === 'kids';
   const isRealBoard = isRealLeaderboardUser(user);
@@ -224,7 +233,13 @@ export function LeaderboardPage() {
     const records = getMergedLeaderboard(currentUserName, safeUserData.xp, safeUserData.avatarId);
     setBoardData(records);
 
-    window.setTimeout(() => setSimulationPulse(false), 800);
+    if (pulseTimerRef.current !== null) {
+      window.clearTimeout(pulseTimerRef.current);
+    }
+    pulseTimerRef.current = window.setTimeout(() => {
+      pulseTimerRef.current = null;
+      setSimulationPulse(false);
+    }, 800);
   };
 
   const userRankIdx = boardData.findIndex((item) => item.isCurrentUser);

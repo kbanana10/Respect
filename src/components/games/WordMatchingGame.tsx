@@ -3,7 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Trophy, Star, Award, ArrowRight, Heart, Clock, Lightbulb, Coins } from 'lucide-react';
 import { Word } from '../../data/kurmanji';
 import { Language } from '../../models/user';
-import { playSuccessSound, playFailureSound, playCompleteSound } from '../../features/audio/hooks/useAudio';
+import {
+  playSuccessSound,
+  playFailureSound,
+  playCompleteSound,
+  playTapSound,
+  playRewardSound,
+} from '../../features/audio/hooks/useAudio';
 import { Progress } from '../ui';
 import { GameHeader } from './GameHeader';
 import { pickLocalized } from '../../localization/translations';
@@ -11,6 +17,7 @@ import { pickLocalized } from '../../localization/translations';
 interface WordMatchingGameProps {
   vocabulary: Word[];
   language: Language;
+  isKidsMode?: boolean;
   onWin: (xp: number) => void;
   onClose: () => void;
 }
@@ -23,7 +30,13 @@ interface MatchItem {
   state: 'default' | 'selected' | 'correct' | 'wrong';
 }
 
-export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordMatchingGameProps) {
+export function WordMatchingGame({
+  vocabulary,
+  language,
+  isKidsMode = false,
+  onWin,
+  onClose,
+}: WordMatchingGameProps) {
   const [round, setRound] = useState(1);
   const [pairsCount, setPairsCount] = useState(4); // rows count
   const [lives, setLives] = useState<number | null>(null); // null means infinite (for round 1)
@@ -44,10 +57,21 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
    * when the new round's board is dealt in `startNewRound`.
    */
   const advanceRoundLockRef = useRef(false);
+  const wrongResetTimerRef = useRef<number | null>(null);
+  const comboRef = useRef(0);
 
-  // Countdown timer effect
+  const clearWrongResetTimer = () => {
+    if (wrongResetTimerRef.current !== null) {
+      window.clearTimeout(wrongResetTimerRef.current);
+      wrongResetTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => () => clearWrongResetTimer(), []);
+
+  // Countdown timer effect (disabled in Kids Mode for zero-stress play)
   useEffect(() => {
-    if (isGameOver || recentCompleted || timeLeft <= 0) return;
+    if (isKidsMode || isGameOver || recentCompleted || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
@@ -62,7 +86,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isGameOver, recentCompleted, timeLeft]);
+  }, [isKidsMode, isGameOver, recentCompleted, timeLeft]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -72,7 +96,9 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
 
   // Initialize a round of matching
   const startNewRound = (targetRound: number) => {
+    clearWrongResetTimer();
     roundRewardedRef.current = false;
+    comboRef.current = 0;
     // NOTE: advanceRoundLockRef is intentionally NOT released here.
     // The victory overlay is still on screen during its exit animation and
     // its (cloned) button shares this ref — releasing the lock this early
@@ -93,8 +119,8 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
     else if (targetRound >= 5) count = 6;
     setPairsCount(count);
 
-    // 2. Determine lives/attempts limit based on round
-    if (targetRound === 1) {
+    // 2. Determine lives/attempts limit based on round (Kids Mode is always unlimited)
+    if (isKidsMode || targetRound === 1) {
       setLives(null); // Infinite
     } else if (targetRound === 2) {
       setLives(5);
@@ -117,10 +143,10 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
       state: 'default' as const,
     })).sort(() => 0.5 - Math.random());
 
-    // Arabic meanings (shuffled)
+    // Localized meanings (shuffled)
     const arItems: MatchItem[] = selectedWords.map((word) => ({
       id: `${word.id}-ar`,
-      text: word.ar,
+      text: pickLocalized(language, { en: word.en, ar: word.ar, ku: word.en }),
       wordId: word.id,
       isMatched: false,
       state: 'default' as const,
@@ -134,7 +160,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
     if (vocabulary && vocabulary.length > 0) {
       startNewRound(round);
     }
-  }, [vocabulary, round]);
+  }, [vocabulary, round, isKidsMode, language]);
 
   const handlePairSelection = (id: string, type: 'ku' | 'ar') => {
     if (recentCompleted || isGameOver) return;
@@ -145,9 +171,11 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
 
       if (selectedKu === id) {
         // Deselect
+        playTapSound(0);
         setSelectedKu(null);
         setKurdishList(prev => prev.map(i => i.id === id ? { ...i, state: 'default' } : i));
       } else {
+        playTapSound(selectedAr ? 1 : 0);
         setSelectedKu(id);
         setKurdishList(prev => prev.map(i => i.id === id ? { ...i, state: 'selected' } : (i.state === 'selected' ? { ...i, state: 'default' } : i)));
       }
@@ -157,9 +185,11 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
 
       if (selectedAr === id) {
         // Deselect
+        playTapSound(0);
         setSelectedAr(null);
         setArabicList(prev => prev.map(i => i.id === id ? { ...i, state: 'default' } : i));
       } else {
+        playTapSound(selectedKu ? 1 : 0);
         setSelectedAr(id);
         setArabicList(prev => prev.map(i => i.id === id ? { ...i, state: 'selected' } : (i.state === 'selected' ? { ...i, state: 'default' } : i)));
       }
@@ -175,7 +205,8 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
       if (kuItem && arItem) {
         if (kuItem.wordId === arItem.wordId) {
           // CORRECT MATCH!
-          playSuccessSound();
+          comboRef.current += 1;
+          playSuccessSound(comboRef.current);
           setGainedXP(prev => prev + 5);
 
           // Mark as matched dynamically
@@ -186,10 +217,11 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
           setSelectedAr(null);
         } else {
           // FAILED MATCH
+          comboRef.current = 0;
           playFailureSound();
           
-          // Reduce attempt / heart if not Round 1
-          if (round > 1 && lives !== null) {
+          // Reduce attempt / heart if not Round 1 and not Kids Mode
+          if (!isKidsMode && round > 1 && lives !== null) {
             setLives((curr) => {
               if (curr === null) return null;
               const next = curr - 1;
@@ -210,15 +242,17 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
           setSelectedKu(null);
           setSelectedAr(null);
 
-          // Return to default state after delay
-          setTimeout(() => {
+          // Return to default state after delay (tracked for safe unmount cleanup)
+          clearWrongResetTimer();
+          wrongResetTimerRef.current = window.setTimeout(() => {
+            wrongResetTimerRef.current = null;
             setKurdishList(prev => prev.map(i => i.id === currentKu && i.state === 'wrong' ? { ...i, state: 'default' } : i));
             setArabicList(prev => prev.map(i => i.id === currentAr && i.state === 'wrong' ? { ...i, state: 'default' } : i));
           }, 800);
         }
       }
     }
-  }, [selectedKu, selectedAr, round, lives]);
+  }, [selectedKu, selectedAr, round, lives, isKidsMode]);
 
   // Check if all items in current round are matched
   useEffect(() => {
@@ -277,10 +311,23 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
         onExit={onClose}
         exitLabel={pickLocalized(language, { en: 'Exit game', ar: 'الخروج من اللعبة', ku: 'Ji lîstikê derkeve' })}
         indicator={
-          <span className="flex items-center gap-1 rounded-full px-2.5 min-h-[36px] bg-white dark:bg-slate-900 border border-line-soft shadow-[0_2px_10px_rgba(0,0,0,0.04)] text-xs font-black tabular-nums text-ink">
-            <Clock className="w-3.5 h-3.5 text-[#B45309]" />
-            <span dir="ltr">{formatTime(timeLeft)}</span>
-          </span>
+          isKidsMode ? (
+            <span
+              data-testid="word-matching-relaxed-badge"
+              className="flex items-center gap-1 rounded-full px-2 min-h-[34px] bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-[11px] font-black text-emerald-700 dark:text-emerald-300 whitespace-nowrap"
+            >
+              <span aria-hidden="true">∞</span>
+              <span>{pickLocalized(language, { en: 'Relaxed', ar: 'بلا وقت', ku: 'Bê dem' })}</span>
+            </span>
+          ) : (
+            <span
+              data-testid="word-matching-timer"
+              className="flex items-center gap-1 rounded-full px-2.5 min-h-[36px] bg-white dark:bg-slate-900 border border-line-soft shadow-[0_2px_10px_rgba(0,0,0,0.04)] text-xs font-black tabular-nums text-ink"
+            >
+              <Clock className="w-3.5 h-3.5 text-[#B45309]" />
+              <span dir="ltr">{formatTime(timeLeft)}</span>
+            </span>
+          )
         }
         stat={{ label: pickLocalized(language, { en: 'XP', ar: 'خبرة', ku: 'XP' }), value: gainedXP }}
       />
@@ -363,7 +410,10 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
               <span className="flex gap-1 items-center">
                 {lives === null ? (
                   <span className="text-emerald-500 text-[11px] font-black uppercase tracking-wider bg-emerald-50 dark:bg-emerald-950/20 px-2 py-0.5 rounded-full">
-                    ∞ {pickLocalized(language, { en: 'Unlimited (R1)', ar: 'غير محدودة (ج1)', ku: 'Bêsînor (G1)' })}
+                    ∞{' '}
+                    {isKidsMode
+                      ? pickLocalized(language, { en: 'Unlimited', ar: 'غير محدودة', ku: 'Bêsînor' })
+                      : pickLocalized(language, { en: 'Unlimited (R1)', ar: 'غير محدودة (ج1)', ku: 'Bêsînor (G1)' })}
                   </span>
                 ) : (
                   <div className="flex gap-0.5">
@@ -422,10 +472,10 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
               </AnimatePresence>
             </div>
 
-            {/* Right Column: Arabic meanings */}
+            {/* Right Column: Localized meanings */}
             <div className="space-y-3.5">
               <h3 className="text-xs font-black text-slate-400 text-center uppercase tracking-widest leading-none mb-1">
-                {pickLocalized(language, { en: 'Arabic', ar: 'العربية', ku: 'Wate' })}
+                {pickLocalized(language, { en: 'English', ar: 'العربية', ku: 'Wate' })}
               </h3>
               <AnimatePresence mode="popLayout">
                 {arabicList.map((item) => {
@@ -471,7 +521,7 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
                 if (unmatchedKu) {
                   const matchingAr = arabicList.find(a => a.wordId === unmatchedKu.wordId);
                   if (matchingAr) {
-                    playSuccessSound();
+                    playRewardSound();
                     setSelectedKu(null);
                     setSelectedAr(null);
                     setKurdishList(prev => prev.map(i => i.id === unmatchedKu.id ? { ...i, isMatched: true, state: 'correct' } : i));
@@ -483,8 +533,12 @@ export function WordMatchingGame({ vocabulary, language, onWin, onClose }: WordM
             >
               <Lightbulb className="w-4 h-4 text-amber-500 fill-amber-500" />
               <div className="flex items-center gap-1">
-                <span>10</span>
-                <Coins className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                {!isKidsMode && (
+                  <>
+                    <span>10</span>
+                    <Coins className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500" />
+                  </>
+                )}
                 <span>{pickLocalized(language, { en: 'Hint', ar: 'تلميح', ku: 'Alîkarî' })}</span>
               </div>
             </button>

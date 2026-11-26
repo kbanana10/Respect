@@ -62,7 +62,7 @@ export function Roadmap() {
   const [selectedNode, setSelectedNode] = useState<{
     lesson: Lesson;
     level: CEFRLevel;
-    status: 'completed' | 'active' | 'locked';
+    status: 'completed' | 'active' | 'available' | 'locked';
   } | null>(null);
 
   const { startTour } = useAppTour();
@@ -120,16 +120,29 @@ export function Roadmap() {
   const isLevelOpen = (lvl: CEFRLevel) =>
     userXp >= lvl.requiredXp || unlockedLevels.has(lvl.id) || lvl.id === 'U0' || lvl.id === 'A1';
 
-  const getNodeStatus = (lessonId: string, level: CEFRLevel): 'completed' | 'active' | 'locked' => {
+  const isLessonUnlocked = (lessonId: string, level: CEFRLevel): boolean => {
+    if (!isLevelOpen(level)) return false;
+    if (completedLessons.includes(lessonId)) return true;
+    const flatIdx = allFlatNodes.findIndex((n) => n.lesson.id === lessonId);
+    if (flatIdx <= 0) return true;
+    const prev = allFlatNodes[flatIdx - 1];
+    return completedLessons.includes(prev.lesson.id) || prev.level.id !== level.id;
+  };
+
+  // Exactly one uncompleted unlocked lesson receives the focal "Next Up" highlight.
+  const primaryNextLessonId =
+    allFlatNodes.find(
+      (n) => !completedLessons.includes(n.lesson.id) && isLessonUnlocked(n.lesson.id, n.level),
+    )?.lesson.id ?? null;
+
+  const getNodeStatus = (
+    lessonId: string,
+    level: CEFRLevel,
+  ): 'completed' | 'active' | 'available' | 'locked' => {
     if (!isLevelOpen(level)) return 'locked';
     if (completedLessons.includes(lessonId)) return 'completed';
-    const flatIdx = allFlatNodes.findIndex((n) => n.lesson.id === lessonId);
-    if (flatIdx <= 0) return 'active';
-    const prev = allFlatNodes[flatIdx - 1];
-    if (completedLessons.includes(prev.lesson.id) || prev.level.id !== level.id) {
-      return 'active';
-    }
-    return 'locked';
+    if (!isLessonUnlocked(lessonId, level)) return 'locked';
+    return lessonId === primaryNextLessonId ? 'active' : 'available';
   };
 
   const handleUnlockLevelTestOut = async (level: CEFRLevel) => {
@@ -160,6 +173,7 @@ export function Roadmap() {
       close: 'Close',
       statusDone: 'Completed',
       statusNext: 'Next Up',
+      statusAvailable: 'Open',
       statusLocked: 'Locked',
     },
     ar: {
@@ -181,6 +195,7 @@ export function Roadmap() {
       close: 'إغلاق',
       statusDone: 'مكتمل',
       statusNext: 'الدرس التالي',
+      statusAvailable: 'متاح',
       statusLocked: 'مغلق',
     },
     ku: {
@@ -202,6 +217,7 @@ export function Roadmap() {
       close: 'Bigire',
       statusDone: 'Temam',
       statusNext: 'Gava Pêş',
+      statusAvailable: 'Vekirî',
       statusLocked: 'Girtî',
     },
   });
@@ -325,8 +341,9 @@ export function Roadmap() {
                         : '';
 
                   return (
-                    <div key={lesson.id} className={cn('w-full max-w-sm transition-transform', offsetClass)}>
+                    <div key={lesson.id} className={cn('w-full max-w-md transition-transform', offsetClass)}>
                       <motion.button
+                        id={`roadmap-node-${lesson.id}`}
                         type="button"
                         data-tour={`roadmap-node-${lesson.id}`}
                         whileTap={{ scale: 0.97 }}
@@ -336,8 +353,10 @@ export function Roadmap() {
                           status === 'completed'
                             ? 'border-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/30'
                             : status === 'active'
-                              ? 'border-[#FFB300] bg-[#FFF6E0] dark:bg-[#3A2F14] shadow-[0_6px_24px_rgba(255,179,0,0.18)]'
-                              : 'border-line-soft dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 opacity-75',
+                              ? 'border-[var(--kq-gold)] bg-[var(--kq-surface-2)] shadow-[0_6px_24px_rgba(255,179,0,0.18)]'
+                              : status === 'available'
+                                ? 'border-line-soft dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-[var(--kq-gold)]/60'
+                                : 'border-line-soft dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 opacity-75',
                         )}
                       >
                         <div
@@ -346,8 +365,10 @@ export function Roadmap() {
                             status === 'completed'
                               ? 'bg-emerald-500 text-white'
                               : status === 'active'
-                                ? 'bg-[#FFB300] text-[#432C00] shadow-[0_3px_0_#E69500]'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-500',
+                                ? 'bg-[var(--kq-gold)] text-[var(--kq-gold-on)] shadow-[0_3px_0_var(--kq-gold-dark)]'
+                                : status === 'available'
+                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                                  : 'bg-slate-200 dark:bg-slate-700 text-slate-500',
                           )}
                         >
                           {status === 'locked' ? (
@@ -361,11 +382,11 @@ export function Roadmap() {
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-black text-base text-ink truncate">
+                            <span className="font-black text-base text-ink leading-snug line-clamp-2">
                               {getLessonTitle(lesson, language)}
                             </span>
                           </div>
-                          <p className="text-xs text-muted font-semibold truncate mt-0.5">
+                          <p className="text-xs text-muted font-semibold line-clamp-2 mt-0.5">
                             {getLessonDesc(lesson, language)}
                           </p>
                           <div className="flex items-center gap-2 mt-1 text-xs font-extrabold">
@@ -374,15 +395,19 @@ export function Roadmap() {
                                 status === 'completed'
                                   ? 'text-emerald-700 dark:text-emerald-300'
                                   : status === 'active'
-                                    ? 'text-[#8A6100] dark:text-[#FFCE6B]'
-                                    : 'text-muted',
+                                    ? 'text-[var(--kq-gold-text)]'
+                                    : status === 'available'
+                                      ? 'text-slate-700 dark:text-slate-300'
+                                      : 'text-muted',
                               )}
                             >
                               {status === 'completed'
                                 ? copy.statusDone
                                 : status === 'active'
                                   ? copy.statusNext
-                                  : copy.statusLocked}
+                                  : status === 'available'
+                                    ? copy.statusAvailable
+                                    : copy.statusLocked}
                             </span>
                             <span aria-hidden="true">·</span>
                             <span className="text-muted tabular-nums">+{lesson.xpReward} XP</span>
@@ -390,8 +415,13 @@ export function Roadmap() {
                         </div>
 
                         {status === 'active' && (
-                          <span className="w-10 h-10 rounded-full bg-[#FFB300] text-[#432C00] flex items-center justify-center shrink-0">
+                          <span className="w-10 h-10 rounded-full bg-[var(--kq-gold)] text-[var(--kq-gold-on)] flex items-center justify-center shrink-0">
                             <Play className="w-4 h-4 fill-current" />
+                          </span>
+                        )}
+                        {status === 'available' && (
+                          <span className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0">
+                            <Play className="w-3.5 h-3.5 fill-current" />
                           </span>
                         )}
                         {status === 'completed' && (

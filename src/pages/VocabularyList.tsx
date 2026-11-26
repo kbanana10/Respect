@@ -568,14 +568,11 @@ export function VocabularyList() {
   // pop normally.
   useEffect(() => {
     if (!isNumbers) return;
+    let rafId: number | null = null;
     const onPop = () => {
-      // PHASE 10 (smart back): a back/forward press while an overlay is open
-      // consumes the sentinel entry we pushed on open and just closes the
-      // overlay in place — the router is left at its original location, so the
-      // NEXT back press navigates away normally. If the UI "✕" chip already
-      // consumed the sentinel via an explicit history.back(), this self-inflicted
-      // pop is ignored.
-      requestAnimationFrame(() => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
         if (suppressNextPopRef.current) {
           suppressNextPopRef.current = false;
           return;
@@ -588,7 +585,10 @@ export function VocabularyList() {
       });
     };
     globalThis.window?.addEventListener('popstate', onPop);
-    return () => globalThis.window?.removeEventListener('popstate', onPop);
+    return () => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      globalThis.window?.removeEventListener('popstate', onPop);
+    };
   }, [isNumbers, expandedFamilyId, isAdvancedOpen]);
   // PHASE 8 (clean Alphabet-parity): Numbers & Colors render a page that is
   // structurally identical to the Alphabet page — one clean focus hero, a

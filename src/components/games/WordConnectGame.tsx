@@ -3,7 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Trophy, Star, Award, ArrowRight, Lightbulb, Shuffle } from 'lucide-react';
 import { Word } from '../../data/kurmanji';
 import { Language } from '../../models/user';
-import { playSuccessSound, playFailureSound, playCompleteSound } from '../../features/audio/hooks/useAudio';
+import {
+  playSuccessSound,
+  playFailureSound,
+  playCompleteSound,
+  playTapSound,
+  playRewardSound,
+} from '../../features/audio/hooks/useAudio';
 import { Progress, StatPill } from '../ui';
 import { GameHeader } from './GameHeader';
 import { getPrimaryAnswerVariant } from '../../features/quiz/utils/answerUtils';
@@ -56,6 +62,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
    *   which happens while the previous overlay is still animating out).
    */
   const advanceTimerRef = useRef<number | null>(null);
+  const wrongResetTimerRef = useRef<number | null>(null);
   const advanceLevelLockRef = useRef(false);
 
   const clearAdvanceTimer = () => {
@@ -65,8 +72,18 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
     }
   };
 
-  // Cancel any pending auto-advance when the game unmounts
-  useEffect(() => () => clearAdvanceTimer(), []);
+  const clearWrongTimer = () => {
+    if (wrongResetTimerRef.current !== null) {
+      window.clearTimeout(wrongResetTimerRef.current);
+      wrongResetTimerRef.current = null;
+    }
+  };
+
+  // Cancel any pending timers when the game unmounts
+  useEffect(() => () => {
+    clearAdvanceTimer();
+    clearWrongTimer();
+  }, []);
 
   /** The ONLY path that moves the game forward — exactly +1 per solved word. */
   const advanceLevel = (solvedLevel: number) => {
@@ -93,6 +110,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
 
   // Setup a specific level word
   const loadWordForLevel = (lvl: number) => {
+    clearWrongTimer();
     const pool = getGameWords();
     if (pool.length === 0) return;
     
@@ -156,19 +174,14 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
     if (!selectedIndices.includes(index)) {
       const newIndices = [...selectedIndices, index];
       setSelectedIndices(newIndices);
-      
-      // Gentle audio click visual/feedback can be triggered here if sound assets exist
-      // Highlight selection or vibrate slightly
-      if (window.navigator && window.navigator.vibrate) {
-        window.navigator.vibrate(10);
-      }
+      playTapSound(newIndices.length - 1);
     }
   };
 
   // Shuffle letters position
   const handleShuffle = () => {
     if (isLevelSuccess || isWordCorrect !== null) return;
-    
+    playTapSound(0);
     // Smoothly shuffle currently visible letters
     const currentLettersData = letters.map(l => ({ char: l.char, index: l.index }));
     const shuffled = currentLettersData.sort(() => Math.random() - 0.5);
@@ -182,6 +195,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
     if (!currentWord || isLevelSuccess) return;
     const wordLen = getConnectTarget(currentWord).length;
     if (revealedHintCount < wordLen) {
+      playRewardSound();
       setRevealedHintCount(prev => prev + 1);
     }
   };
@@ -212,7 +226,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
       levelAwardedRef.current = true;
       advanceLevelLockRef.current = false; // success overlay appears — allow exactly one advance
       // CORRECT!
-      playSuccessSound();
+      playSuccessSound(level);
       setIsWordCorrect(true);
       setIsLevelSuccess(true);
       
@@ -233,8 +247,10 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
       playFailureSound();
       setIsWordCorrect(false);
       
-      // Let it flash red and reset
-      window.setTimeout(() => {
+      // Let it flash red and reset (tracked for safe unmount cleanup)
+      clearWrongTimer();
+      wrongResetTimerRef.current = window.setTimeout(() => {
+        wrongResetTimerRef.current = null;
         setIsWordCorrect(null);
         setSelectedIndices([]);
         setDragLineEnd(null);
@@ -247,6 +263,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
   // --- MOUSE DRAG EVENT HANDLERS ---
   const handleMouseDown = (index: number) => {
     if (isLevelSuccess || isWordCorrect !== null) return;
+    playTapSound(0);
     setIsDragging(true);
     setSelectedIndices([index]);
     setDragLineEnd({ x: letters[index].x, y: letters[index].y });
@@ -293,6 +310,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
     e.preventDefault();
     if (isLevelSuccess || isWordCorrect !== null) return;
+    playTapSound(0);
     setIsDragging(true);
     setSelectedIndices([index]);
     touchActiveIndices.current = [index];
@@ -325,9 +343,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
         } else if (!touchActiveIndices.current.includes(idx)) {
           touchActiveIndices.current.push(idx);
           setSelectedIndices([...touchActiveIndices.current]);
-          if (window.navigator && window.navigator.vibrate) {
-            window.navigator.vibrate(10);
-          }
+          playTapSound(touchActiveIndices.current.length - 1);
         }
       }
     }
@@ -361,6 +377,7 @@ export function WordConnectGame({ vocabulary, language, onWin, onClose }: WordCo
   // Complete round reset
   const handleRestartFullGame = () => {
     clearAdvanceTimer();
+    clearWrongTimer();
     advanceLevelLockRef.current = false;
     setLevel(1);
     setGainedXP(0);

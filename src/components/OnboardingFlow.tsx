@@ -1,10 +1,9 @@
 /**
- * OnboardingFlow.tsx — 4-Step Kids + Adults Adaptive Onboarding with 60-Second First Win.
+ * OnboardingFlow.tsx — 3-Step Kids + Adults Adaptive Onboarding with 60-Second First Win.
  *
- *   1. App Language (ar / en / ku) — live instant RTL/LTR switch
- *   2. Learner Mode (Kids 5–12 vs Adults 13+)
- *   3. Avatar & Starting Point (Kids -> Unit 0; Adults -> Level + Daily Goal)
- *   4. 60-Second First Win ("Silav!") — listen, tap the right meaning, celebrate & enter Home
+ *   1. Learner Mode (Kids 5–12 vs Adults 13+) — with compact header language toggle
+ *   2. Avatar & Starting Point (Kids -> Unit 0; Adults -> Level + Daily Goal)
+ *   3. 60-Second First Win ("Silav!") — listen, tap the right meaning, celebrate & enter Home
  */
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -38,17 +37,18 @@ const AVATAR_ICONS = {
 } satisfies Record<string, React.ComponentType<{ className?: string }>>;
 
 const AVATAR_LABELS = {
-  av1: { en: 'Explorer', ar: 'مستكشف', ku: 'Lêger' },
-  av2: { en: 'Happy Friend', ar: 'صديق سعيد', ku: 'Hevalê Kêfxweş' },
-  av3: { en: 'Scholar', ar: 'طالب علم', ku: 'Xwendekar' },
-  av4: { en: 'Flame Runner', ar: 'شعلة الحماس', ku: 'Agirê Hêzê' },
-  av5: { en: 'Starlight', ar: 'نجمة مضيئة', ku: 'Stêrka Geş' },
-  av6: { en: 'Golden Star', ar: 'نجم ذهبي', ku: 'Stêrka Zêrîn' },
-  av7: { en: 'Navigator', ar: 'رحّالة', ku: 'Rêwî' },
-  av8: { en: 'Champion', ar: 'بطل', ku: 'Şampiyon' },
+  'av-1': { en: 'Explorer', ar: 'مستكشف', ku: 'Lêger' },
+  'av-2': { en: 'Happy Friend', ar: 'صديق سعيد', ku: 'Hevalê Kêfxweş' },
+  'av-3': { en: 'Scholar', ar: 'طالب علم', ku: 'Xwendekar' },
+  'av-4': { en: 'Flame Runner', ar: 'شعلة الحماس', ku: 'Agirê Hêzê' },
+  'av-5': { en: 'Starlight', ar: 'نجمة مضيئة', ku: 'Stêrka Geş' },
+  'av-6': { en: 'Golden Star', ar: 'نجم ذهبي', ku: 'Stêrka Zêrîn' },
+  'av-7': { en: 'Navigator', ar: 'رحّالة', ku: 'Rêwî' },
+  'av-8': { en: 'Champion', ar: 'بطل', ku: 'Şampiyon' },
 } satisfies Record<string, { en: string; ar: string; ku: string }>;
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 3;
+const HEADER_LANGS: readonly Language[] = ['en', 'ku', 'ar'];
 
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const { language, setLanguage, updateUserData, userData } = useAuth();
@@ -60,17 +60,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [goalXp, setGoalXp] = useState<number>(50);
   const [avatarId, setAvatarId] = useState<string>(AVATARS[0].id);
 
-  // Step 4: 60-Second First Win state ("Silav!")
+  // Step 3: 60-Second First Win state ("Silav!")
   const [pickedGreeting, setPickedGreeting] = useState<string | null>(null);
   const [firstWinSolved, setFirstWinSolved] = useState(false);
 
   const isKids = learnerMode === 'kids';
-
-  const LANG_OPTIONS: readonly { code: Language; title: string; desc: string; flag: string }[] = [
-    { code: 'ar', title: 'العربية', desc: 'تعلّم الكرمانجية باللغة العربية (RTL)', flag: '🌙' },
-    { code: 'en', title: 'English', desc: 'Learn Kurmanji Kurdish in English', flag: '🌍' },
-    { code: 'ku', title: 'Kurdî (Kurmancî)', desc: 'Rûbera Kurdî ya Kurmancî', flag: '☀️' },
-  ];
 
   const LEVELS = [
     {
@@ -185,7 +179,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   };
 
-  const stepReady = step === 3 ? firstWinSolved : true;
+  const stepReady = step === 2 ? firstWinSolved : true;
 
   const next = () => {
     if (!stepReady || saving) return;
@@ -194,7 +188,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   const stepMeta = [
-    [t(language, 'ftux_lang_title'), t(language, 'ftux_lang_subtitle')],
     [t(language, 'mode_select_title'), t(language, 'mode_select_subtitle')],
     [
       isKids ? t(language, 'onb_avatar_title') : pickLocalized(language, { en: 'Personalize Your Start', ar: 'خصّص بدايتك', ku: 'Destpêka Xwe Xweser Bike' }),
@@ -236,6 +229,23 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               <span>
                 {t(language, 'onb_step')} {step + 1} / {TOTAL_STEPS}
               </span>
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg">
+                {HEADER_LANGS.map((code) => (
+                  <button
+                    key={code}
+                    type="button"
+                    aria-pressed={language === code}
+                    onClick={() => setLanguage(code)}
+                    className={`px-2 py-0.5 min-h-[26px] rounded-md text-[11px] font-extrabold cursor-pointer transition-colors ${
+                      language === code
+                        ? 'bg-white dark:bg-slate-700 text-[#8A6100] dark:text-[#FFCE6B] shadow-2xs'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-ink'
+                    }`}
+                  >
+                    {code === 'en' ? 'EN' : code === 'ku' ? 'KU' : 'عربي'}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden" dir="ltr">
               <motion.div
@@ -245,7 +255,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               />
             </div>
           </div>
-          <span className="w-11 shrink-0" />
+          <span className="w-2 shrink-0" />
         </div>
 
         {/* Step title */}
@@ -267,22 +277,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               transition={{ duration: 0.18 }}
               className="space-y-3"
             >
-              {/* STEP 0: Language (live instant RTL/LTR switch) */}
-              {step === 0 &&
-                LANG_OPTIONS.map((opt) => (
-                  <OptionRow
-                    key={opt.code}
-                    active={language === opt.code}
-                    onClick={() => setLanguage(opt.code)}
-                    icon={<span className="text-xl">{opt.flag}</span>}
-                    tone="bg-[#FFF3D6] dark:bg-[#3A2F14]"
-                    title={opt.title}
-                    desc={opt.desc}
-                  />
-                ))}
-
-              {/* STEP 1: Learner Mode (Kids vs Adults) */}
-              {step === 1 && (
+              {/* STEP 0: Learner Mode (Kids vs Adults) */}
+              {step === 0 && (
                 <>
                   <OptionRow
                     active={learnerMode === 'kids'}
@@ -304,8 +300,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 </>
               )}
 
-              {/* STEP 2: Avatar + Starting Point */}
-              {step === 2 && (
+              {/* STEP 1: Avatar + Starting Point */}
+              {step === 1 && (
                 <div className="space-y-5">
                   <div>
                     <p className="text-xs font-extrabold text-muted uppercase tracking-wider mb-2.5 px-1">
@@ -320,7 +316,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                           Object.entries(AVATAR_LABELS),
                         );
                         const Icon = iconLookup.get(av.icon) ?? UserIcon;
-                        const labelEntry = labelLookup.get(av.id) ?? AVATAR_LABELS.av1;
+                        const labelEntry = labelLookup.get(av.id) ?? AVATAR_LABELS['av-1'];
                         const active = avatarId === av.id;
                         return (
                           <button
@@ -402,8 +398,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 </div>
               )}
 
-              {/* STEP 3: 60-Second First Win ("Silav!") */}
-              {step === 3 && (
+              {/* STEP 2: 60-Second First Win ("Silav!") */}
+              {step === 2 && (
                 <div className="space-y-4">
                   <div className="bg-white dark:bg-slate-900 border border-line-soft dark:border-slate-800 rounded-3xl p-6 text-center shadow-flat space-y-3">
                     <span className="text-5xl block select-none" aria-hidden="true">

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../store/AuthContext';
-import { X, AlertTriangle, ShieldCheck, Gem, Lightbulb, PartyPopper, Heart } from 'lucide-react';
+import { X, AlertTriangle, ShieldCheck, Gem, Lightbulb, PartyPopper, Heart, Volume2, VolumeX, Flame } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { t, pickLocalized } from '../localization/translations';
 import { AudioButton } from '../features/audio/components/AudioButton';
-import { getMuteState, setMuteState, playAudioUrl, stopAllActiveAudio } from '../features/audio/hooks/useAudio';
+import { useSoundMuted, playRewardSound, playAudioUrl, stopAllActiveAudio } from '../features/audio/hooks/useAudio';
 import { useQuizEngine } from '../features/quiz/hooks/useQuizEngine';
 import { getAdaptiveLevelId } from '../features/quiz/utils/questionGenerator';
 import { categories } from '../data/kurmanji';
@@ -28,12 +28,10 @@ export function Quiz() {
   const isKidsMode = userData?.learnerMode === 'kids';
 
   const [useSlowPronunciation, setUseSlowPronunciation] = useState(false);
-  const [isMuted, setIsMuted] = useState(getMuteState());
+  const [isMuted, setSoundMuted] = useSoundMuted();
 
   const handleToggleMute = () => {
-    const nextMute = !isMuted;
-    setIsMuted(nextMute);
-    setMuteState(nextMute);
+    setSoundMuted(!isMuted);
   };
 
   const [isInStudyPhase, setIsInStudyPhase] = useState(true);
@@ -54,6 +52,7 @@ export function Quiz() {
     hasChecked,
     isCorrect,
     score,
+    combo,
     hearts,
     isFinished,
     showConfetti,
@@ -114,6 +113,10 @@ export function Quiz() {
       heartsLeft: (n: number) => `${n} hearts left`,
       quizProgress: 'Quiz progress',
       useHint: isKidsMode ? 'Gentle Hint (Free)' : 'Use Hint',
+      muteAudio: 'Mute sounds',
+      unmuteAudio: 'Turn on sounds',
+      comboPraise: (n: number) => `Awesome! ${n} in a row!`,
+      kidsRetry: 'Good try! The answer is:',
     },
     ar: {
       srsReview: 'مراجعة التكرار المتباعد',
@@ -132,6 +135,10 @@ export function Quiz() {
       heartsLeft: (n: number) => `${n} قلوب متبقية`,
       quizProgress: 'تقدم الاختبار',
       useHint: isKidsMode ? 'تلميح مجاني' : 'استخدم تلميح',
+      muteAudio: 'كتم الأصوات',
+      unmuteAudio: 'تشغيل الأصوات',
+      comboPraise: (n: number) => `رائع يا بطل! ${n} متتالية!`,
+      kidsRetry: 'محاولة جميلة! الإجابة هي:',
     },
     ku: {
       srsReview: 'Dubarekirina Jîr (SM-2)',
@@ -150,11 +157,25 @@ export function Quiz() {
       heartsLeft: (n: number) => `${n} dil mane`,
       quizProgress: 'Pêşveçûna azmûnê',
       useHint: isKidsMode ? 'Têbîniya Belaş' : 'Têbînî Bikar Bîne',
+      muteAudio: 'Dengê bêdeng bike',
+      unmuteAudio: 'Dengê veke',
+      comboPraise: (n: number) => `Aferîn! ${n} li pey hev!`,
+      kidsRetry: 'Hewldana baş! Bersiva rast:',
     },
   });
 
   const getCategoryInfo = () => {
     if (moduleId === 'alphabet') return { name: t(language, 'alphabet'), icon: 'Type' };
+    if (moduleId === 'all') {
+      return {
+        name: pickLocalized(language, {
+          en: 'Full Practice',
+          ar: 'تمرين شامل',
+          ku: 'Rahênana Giştî',
+        }),
+        icon: 'Sparkles',
+      };
+    }
     if (moduleId === 'srs_review' || moduleId === 'review_due') {
       return { name: labels.srsReview, icon: 'RotateCcw' };
     }
@@ -372,7 +393,12 @@ export function Quiz() {
 
         <div className="flex items-center gap-2 shrink-0">
           {hearts !== null && (
-            <span className="flex items-center gap-0.5" role="status" aria-label={labels.heartsLeft(hearts)}>
+            <span
+              data-testid="quiz-hearts"
+              className="flex items-center gap-0.5"
+              role="status"
+              aria-label={labels.heartsLeft(hearts)}
+            >
               {Array.from({ length: 3 }).map((_, i) => (
                 <Heart
                   key={i}
@@ -385,6 +411,16 @@ export function Quiz() {
               ))}
             </span>
           )}
+          <button
+            type="button"
+            data-testid="quiz-sound-toggle"
+            onClick={handleToggleMute}
+            aria-label={isMuted ? labels.unmuteAudio : labels.muteAudio}
+            aria-pressed={isMuted}
+            className="w-11 h-11 rounded-full border border-line-soft bg-white dark:bg-slate-900 flex items-center justify-center text-ink hover:bg-surface-3 transition-colors cursor-pointer shrink-0"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4 text-muted" /> : <Volume2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
+          </button>
           <Badge tone="primary" className="shrink-0 tracking-normal">
             {currentIndex + 1}/{questions.length}
           </Badge>
@@ -492,30 +528,48 @@ export function Quiz() {
             <AnimatePresence>
               {hasChecked && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8 }}
                   role="status"
                   className={cn(
-                    'rounded-card border-2 px-4 py-3 flex items-center gap-2.5 text-start',
+                    'rounded-card border-2 px-4 py-3 flex items-center justify-between gap-2.5 text-start',
                     isCorrect
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900 dark:text-emerald-300'
-                      : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300',
+                      : isKidsMode
+                        ? 'bg-amber-50 border-amber-300 text-amber-900 dark:bg-amber-950/40 dark:border-amber-700 dark:text-amber-200'
+                        : 'bg-rose-50 border-rose-200 text-rose-800 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300',
                   )}
                 >
                   {isCorrect ? (
                     <>
-                      <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" aria-hidden="true" />
-                      <span className="font-black text-sm">{t(language, 'quiz_feedback_correct')}</span>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-600" aria-hidden="true" />
+                        <span className="font-black text-sm">
+                          {combo >= 2 ? labels.comboPraise(combo) : t(language, 'quiz_feedback_correct')}
+                        </span>
+                      </div>
+                      {combo >= 2 && (
+                        <span className="inline-flex items-center gap-1 font-black text-xs text-amber-700 dark:text-amber-300 shrink-0">
+                          <Flame className="w-4 h-4 fill-orange-500 text-orange-500" aria-hidden="true" />
+                          ×{combo}
+                        </span>
+                      )}
                     </>
                   ) : (
-                    <>
-                      <X className="w-5 h-5 shrink-0 text-rose-600" aria-hidden="true" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {isKidsMode ? (
+                        <Lightbulb className="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+                      ) : (
+                        <X className="w-5 h-5 shrink-0 text-rose-600" aria-hidden="true" />
+                      )}
                       <span className="text-sm font-bold min-w-0">
-                        <span className="opacity-75">{t(language, 'correct_answer_is')}</span>{' '}
+                        <span className="opacity-80">
+                          {isKidsMode ? labels.kidsRetry : t(language, 'correct_answer_is')}
+                        </span>{' '}
                         <bdi className="font-black">{currentQ.correctAnswer}</bdi>
                       </span>
-                    </>
+                    </div>
                   )}
                 </motion.div>
               )}
@@ -547,6 +601,7 @@ export function Quiz() {
                   const toRemove = wrongOpts.slice(0, Math.max(1, Math.floor(wrongOpts.length / 2)));
                   setEliminatedOptions(toRemove);
                   setHintUsed(true);
+                  playRewardSound();
                   if (hintCost > 0) {
                     void updateUserData?.({ gems: (userData?.gems ?? 0) - hintCost });
                   }

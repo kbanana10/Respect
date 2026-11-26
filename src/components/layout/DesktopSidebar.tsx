@@ -11,6 +11,7 @@ import { SunMark } from '../ui/SunMark';
 import { PWAInstallButton } from '../../presentation/components/PWAInstallButton';
 import { t, pickLocalized } from '../../localization/translations';
 import type { Language } from '../../models/user';
+import { playButtonClickSound } from '../../features/audio/hooks/useAudio';
 
 export interface NavItemConfig {
   readonly path: string;
@@ -67,7 +68,7 @@ export function DesktopSidebar({
       className="hidden lg:flex lg:flex-col w-64 shrink-0 bg-white dark:bg-slate-900 border-e border-line-soft dark:border-slate-800 h-full z-20"
     >
       <div className="px-5 py-5 flex items-center gap-3 border-b border-line dark:border-slate-800">
-        <div className="w-10 h-10 rounded-xl bg-[#FFB300] text-[#432C00] flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-[var(--kq-gold)] text-[var(--kq-gold-on)] flex items-center justify-center shrink-0">
           <SunMark className="w-6 h-6" />
         </div>
         <div className="min-w-0">
@@ -92,11 +93,12 @@ export function DesktopSidebar({
               <Link
                 key={item.path}
                 to={item.path}
+                data-tour={item.tourId}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'flex items-center gap-3 px-3.5 py-2.5 min-h-[48px] rounded-xl text-sm font-bold transition-colors whitespace-nowrap',
                   active
-                    ? 'bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B]'
+                    ? 'bg-[var(--kq-surface-2)] text-[var(--kq-gold-text)]'
                     : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/70 hover:text-ink',
                 )}
               >
@@ -141,11 +143,14 @@ export function DesktopSidebar({
                 key={langCode}
                 type="button"
                 aria-pressed={language === langCode}
-                onClick={() => setLanguage(langCode)}
+                onClick={() => {
+                  playButtonClickSound();
+                  setLanguage(langCode);
+                }}
                 className={cn(
                   'flex-1 py-1.5 min-h-[36px] text-xs font-extrabold rounded-lg transition-colors cursor-pointer whitespace-nowrap',
                   language === langCode
-                    ? 'bg-white dark:bg-slate-700 text-[#8A6100] dark:text-[#FFCE6B] shadow-2xs'
+                    ? 'bg-white dark:bg-slate-700 text-[var(--kq-gold-text)] shadow-2xs'
                     : 'text-slate-500 dark:text-slate-400 hover:text-ink',
                 )}
               >
@@ -155,7 +160,10 @@ export function DesktopSidebar({
           </div>
           <button
             type="button"
-            onClick={toggleTheme}
+            onClick={() => {
+              playButtonClickSound();
+              toggleTheme();
+            }}
             aria-label={themeLabel}
             className="min-w-[44px] min-h-[44px] rounded-xl border border-line-soft dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
           >

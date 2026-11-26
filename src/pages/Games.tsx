@@ -23,7 +23,7 @@ import { WordConnectGame } from '../components/games/WordConnectGame';
 import { MemoryMatchGame } from '../features/games/MemoryMatchGame';
 import { GameShell } from '../features/games/GameShell';
 import { getCurriculumWordPool, type GameVocabItem } from '../features/games/curriculumWords';
-import { playSuccessSound, playFailureSound } from '../features/audio/hooks/useAudio';
+import { playSuccessSound, playFailureSound, playTapSound, playRewardSound } from '../features/audio/hooks/useAudio';
 
 const MemoWordMatchingGame = React.memo(WordMatchingGame);
 const MemoZombieTypingGame = React.memo(ZombieTypingGame);
@@ -52,10 +52,25 @@ export function Games() {
     updateProgressRef.current = updateUserProgress;
   }, [updateUserProgress]);
 
+  const celebrateTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (celebrateTimerRef.current !== null) {
+        window.clearTimeout(celebrateTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleGameWin = useCallback((xp: number) => {
     setCelebrate(true);
     void updateProgressRef.current(xp, 1, true, 0, { source: 'game' });
-    window.setTimeout(() => setCelebrate(false), 3500);
+    if (celebrateTimerRef.current !== null) {
+      window.clearTimeout(celebrateTimerRef.current);
+    }
+    celebrateTimerRef.current = window.setTimeout(() => {
+      celebrateTimerRef.current = null;
+      setCelebrate(false);
+    }, 3500);
   }, []);
 
   const handleExitToMenu = useCallback(() => setActiveGame('menu'), []);
@@ -147,6 +162,11 @@ export function Games() {
     },
   });
 
+  const userDataRef = useRef(userData);
+  useEffect(() => {
+    userDataRef.current = userData;
+  }, [userData]);
+
   const initScrambleWord = useCallback(() => {
     if (scrambleResetTimerRef.current !== null) {
       window.clearTimeout(scrambleResetTimerRef.current);
@@ -157,8 +177,9 @@ export function Games() {
     setUserLetters([]);
     setShowScrambleHint(false);
 
-    const pool = getCurriculumWordPool(userData, 16).filter((w) => w.ku.length >= 2 && w.ku.length <= 8 && !w.ku.includes(' '));
-    const word = pool[Math.floor(Math.random() * pool.length)] ?? getCurriculumWordPool(userData, 10)[0];
+    const currentData = userDataRef.current;
+    const pool = getCurriculumWordPool(currentData, 16).filter((w) => w.ku.length >= 2 && w.ku.length <= 8 && !w.ku.includes(' '));
+    const word = pool[Math.floor(Math.random() * pool.length)] ?? getCurriculumWordPool(currentData, 10)[0];
     setScrambleWord(word);
 
     const chars = word.ku.toLowerCase().split('').map((char, idx) => ({
@@ -168,7 +189,7 @@ export function Games() {
     }));
     const shuffled = [...chars].sort(() => Math.random() - 0.5);
     setScrambleLetters(shuffled);
-  }, [userData]);
+  }, []);
 
   useEffect(() => {
     if (activeGame === 'scramble') {
@@ -181,6 +202,7 @@ export function Games() {
 
   const selectScrambleLetter = (letterId: string, char: string) => {
     if (isScrambleCorrect) return;
+    playTapSound(userLetters.length);
     setScrambleLetters((prev) => prev.map((l) => (l.id === letterId ? { ...l, used: true } : l)));
     setUserLetters((prev) => [...prev, { originalId: letterId, char }]);
   };
@@ -189,6 +211,7 @@ export function Games() {
     if (isScrambleCorrect) return;
     const removed = userLetters[idx];
     if (!removed) return;
+    playTapSound(0);
     setUserLetters((prev) => prev.filter((_, i) => i !== idx));
     setScrambleLetters((prev) => prev.map((l) => (l.id === removed.originalId ? { ...l, used: false } : l)));
     setIsScrambleCorrect(null);
@@ -199,9 +222,9 @@ export function Games() {
     scrambleVerifyLockRef.current = true;
     const built = userLetters.map((l) => l.char).join('');
     if (built === scrambleWord.ku.toLowerCase()) {
-      playSuccessSound();
-      setIsScrambleCorrect(true);
       const nextScore = scrambleScore + 1;
+      playSuccessSound(nextScore);
+      setIsScrambleCorrect(true);
       setScrambleScore(nextScore);
       handleGameWin(10);
       if (userData) {
@@ -420,6 +443,7 @@ export function Games() {
         <MemoWordMatchingGame
           vocabulary={gameVocabulary}
           language={language}
+          isKidsMode={isKidsMode}
           onWin={handleGameWin}
           onClose={handleExitToMenu}
         />
@@ -473,7 +497,12 @@ export function Games() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowScrambleHint((v) => !v)}
+                onClick={() => {
+                  setShowScrambleHint((v) => {
+                    if (!v) playRewardSound();
+                    return !v;
+                  });
+                }}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-muted hover:text-ink cursor-pointer"
               >
                 <HelpCircle className="w-4 h-4" />

@@ -11,8 +11,20 @@
  * - SpeechSynthesis fallback: Ensures every word can be spoken even if the audio file fails.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { isAudioPath, deriveAudioPath } from '../utils/audioSlug';
+import { isAudioPath } from '../utils/audioSlug';
 import { USE_CUSTOM_AUDIO_API } from '../../../lib/audioFlags';
+import {
+  getSharedAudioContext,
+  readMutePreference,
+  writeMutePreference,
+  subscribeMutePreference,
+  triggerTapSound,
+  triggerButtonClickSound,
+  triggerSuccessSound,
+  triggerGentleRetrySound,
+  triggerRewardSound,
+  triggerVictoryFanfare,
+} from '../soundEngine';
 
 const audioCache = new Map<string, HTMLAudioElement>();
 let currentlyPlaying: HTMLAudioElement | null = null;
@@ -58,7 +70,18 @@ function hasKnownBundledAudioAsset(url?: string): boolean {
   return BUNDLED_AUDIO_ASSETS.has(localPath);
 }
 
+const MAX_AVAILABILITY_CACHE = 200;
 const audioAvailabilityCache = new Map<string, boolean>();
+
+function setAvailabilityCache(key: string, value: boolean) {
+  if (audioAvailabilityCache.size >= MAX_AVAILABILITY_CACHE && !audioAvailabilityCache.has(key)) {
+    const oldest = audioAvailabilityCache.keys().next().value;
+    if (oldest !== undefined) {
+      audioAvailabilityCache.delete(oldest);
+    }
+  }
+  audioAvailabilityCache.set(key, value);
+}
 
 async function canUseNativeAudio(url?: string): Promise<boolean> {
   if (!url) return false;
@@ -79,10 +102,10 @@ async function canUseNativeAudio(url?: string): Promise<boolean> {
     const available = response.ok && isAudio;
 
     if (available) {
-      audioAvailabilityCache.set(localPath, true);
+      setAvailabilityCache(localPath, true);
     } else if (response.status === 404) {
       // Only cache definitive 404s, not transient server errors
-      audioAvailabilityCache.set(localPath, false);
+      setAvailabilityCache(localPath, false);
     }
     return available;
   } catch {
@@ -133,137 +156,80 @@ function getCachedAudio(url: string): HTMLAudioElement {
 }
 
 export function getMuteState(): boolean {
-  if (globalThis.window === undefined) return false;
-  return localStorage.getItem('quiz_audio_muted') === 'true';
+  return readMutePreference();
 }
 
 export function setMuteState(muted: boolean) {
-  if (globalThis.window === undefined) return;
-  localStorage.setItem('quiz_audio_muted', String(muted));
+  writeMutePreference(muted);
   if (muted) {
     stopAllActiveAudio();
   }
 }
 
-let audioCtx: AudioContext | null = null;
+/** Reactive hook so global sound mute buttons across header, sidebar, and quiz stay synced. */
+export function useSoundMuted(): [boolean, (nextMuted: boolean) => void] {
+  const [muted, setMuted] = useState<boolean>(() => readMutePreference());
 
-function getAudioContext() {
-  if (!audioCtx) {
-    // SAFETY: Legacy Safari exposes `webkitAudioContext` on the global Window when standard AudioContext is absent.
-    const AudioContextCtor =
-      window.AudioContext ||
-      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextCtor) {
-      throw new Error('Web Audio API is not supported in this browser');
+  useEffect(() => {
+    return subscribeMutePreference((next) => setMuted(next));
+  }, []);
+
+  const updateMuted = useCallback((nextMuted: boolean) => {
+    setMuteState(nextMuted);
+    if (!nextMuted) {
+      triggerButtonClickSound();
     }
-    audioCtx = new AudioContextCtor();
-  }
-  return audioCtx;
+  }, []);
+
+  return [muted, updateMuted];
 }
 
 function playSynthSound(trigger: (ctx: AudioContext, t: number) => void) {
   try {
-    const ctx = getAudioContext();
+    const ctx = getSharedAudioContext();
     if (ctx.state === 'suspended') {
       ctx.resume()
         .then(() => {
           try {
             trigger(ctx, ctx.currentTime);
           } catch (e) {
-            console.warn("Error running custom playSynthSound callback", e);
+            console.warn('Error running custom playSynthSound callback', e);
           }
         })
-        .catch(err => {
-          console.warn("Could not resume AudioContext inside playSynthSound", err);
+        .catch((err) => {
+          console.warn('Could not resume AudioContext inside playSynthSound', err);
         });
     } else {
       trigger(ctx, ctx.currentTime);
     }
   } catch (err) {
-    console.warn("Web Audio API is not supported or accessible in this environment", err);
+    console.warn('Web Audio API is not supported or accessible in this environment', err);
   }
 }
 
+// Kid-friendly, Duolingo-inspired Web Audio + haptic feedback sounds.
+export function playTapSound(stepIndex = 0) {
+  triggerTapSound(stepIndex);
+}
 
-// Use Web Audio directly for UI feedback so missing/corrupt media files or
-// autoplay policies cannot generate noisy HTMLAudio warnings during gameplay.
-export function playSuccessSound() {
-  if (getMuteState()) return;
-  playSynthSound((ctx, t) => {
-    const playNote = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+export function playButtonClickSound() {
+  triggerButtonClickSound();
+}
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, start);
-
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.12, start + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + duration);
-    };
-
-    // Nice bright ascending scale
-    playNote(523.25, t, 0.12); // C5
-    playNote(659.25, t + 0.06, 0.12); // E5
-    playNote(783.99, t + 0.12, 0.25); // G5
-  });
+export function playSuccessSound(combo = 1) {
+  triggerSuccessSound(combo);
 }
 
 export function playFailureSound() {
-  if (getMuteState()) return;
-  playSynthSound((ctx, t) => {
-    const playNote = (freq: number, start: number, duration: number) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+  triggerGentleRetrySound();
+}
 
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freq, start);
-      osc.frequency.linearRampToValueAtTime(freq - 70, start + duration);
-
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.18, start + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + duration);
-    };
-
-    playNote(220, t, 0.3); // A3 slide down
-  });
+export function playRewardSound() {
+  triggerRewardSound();
 }
 
 export function playCompleteSound() {
-  if (getMuteState()) return;
-  playSynthSound((ctx, t) => {
-    const playNote = (freq: number, start: number, duration: number, volume = 0.08) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, start);
-
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(volume, start + 0.06);
-      gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + duration);
-    };
-
-    playNote(261.63, t, 0.5, 0.06); // C4
-    playNote(329.63, t + 0.06, 0.5, 0.06); // E4
-    playNote(392.00, t + 0.12, 0.5, 0.06); // G4
-    playNote(523.25, t + 0.18, 0.9, 0.1); // C5
-  });
+  triggerVictoryFanfare();
 }
 
 // Speech synthesis fallback assistant
@@ -450,8 +416,34 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const audioInstanceRef = useRef<HTMLAudioElement | null>(null);
+  const speechTimerRef = useRef<number | null>(null);
+
+  const clearSpeechTimer = useCallback(() => {
+    if (speechTimerRef.current !== null) {
+      window.clearTimeout(speechTimerRef.current);
+      speechTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleStopPlaying = useCallback(
+    (delayMs: number) => {
+      clearSpeechTimer();
+      speechTimerRef.current = window.setTimeout(() => {
+        speechTimerRef.current = null;
+        setIsPlaying(false);
+      }, delayMs);
+    },
+    [clearSpeechTimer],
+  );
 
   useEffect(() => {
+    return () => {
+      clearSpeechTimer();
+    };
+  }, [clearSpeechTimer]);
+
+  useEffect(() => {
+    clearSpeechTimer();
     setIsPlaying(false);
     setProgress(0);
 
@@ -499,6 +491,7 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
     }
 
     return () => {
+      clearSpeechTimer();
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('pause', handlePause);
@@ -512,14 +505,12 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
         if (currentSetter) currentSetter(false);
       }
     };
-  }, [audioUrl]);
+  }, [audioUrl, clearSpeechTimer]);
 
   const play = useCallback(async (playbackRate: number = 1.0) => {
     if (getMuteState()) {
       setIsPlaying(true);
-      setTimeout(() => {
-        setIsPlaying(false);
-      }, 500);
+      scheduleStopPlaying(500);
       return;
     }
     if (!audioUrl && !textToSpeak) return;
@@ -529,9 +520,7 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
       const fallbackText = textToSpeak || audioUrl || '';
       speakFallback(fallbackText, playbackRate);
       setIsPlaying(true);
-      window.setTimeout(() => {
-        setIsPlaying(false);
-      }, estimateSpeechDurationMs(fallbackText, playbackRate));
+      scheduleStopPlaying(estimateSpeechDurationMs(fallbackText, playbackRate));
       return;
     }
 
@@ -540,9 +529,7 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
       const fallbackText = textToSpeak || audioUrl || '';
       speakFallback(fallbackText, playbackRate);
       setIsPlaying(true);
-      window.setTimeout(() => {
-        setIsPlaying(false);
-      }, estimateSpeechDurationMs(fallbackText, playbackRate));
+      scheduleStopPlaying(estimateSpeechDurationMs(fallbackText, playbackRate));
       return;
     }
 
@@ -574,18 +561,18 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
       setIsPlaying(true);
     } catch (err) {
       console.warn("Direct HTMLAudio failed, utilizing synthesis fallback:", err);
-      speakFallback(textToSpeak || audioUrl, playbackRate);
+      const fallbackText = textToSpeak || audioUrl || '';
+      speakFallback(fallbackText, playbackRate);
       setIsPlaying(true);
       currentSetter = setIsPlaying;
       
       // Simulated play duration for feedback
-      window.setTimeout(() => {
-        setIsPlaying(false);
-      }, estimateSpeechDurationMs(textToSpeak || audioUrl, playbackRate));
+      scheduleStopPlaying(estimateSpeechDurationMs(fallbackText, playbackRate));
     }
-  }, [audioUrl, textToSpeak]);
+  }, [audioUrl, textToSpeak, scheduleStopPlaying]);
 
   const stop = useCallback(() => {
+    clearSpeechTimer();
     if (audioInstanceRef.current) {
       const audio = audioInstanceRef.current;
       try {
@@ -608,7 +595,7 @@ export function useAudio(audioUrl?: string, textToSpeak?: string) {
         console.warn(e);
       }
     }
-  }, []);
+  }, [clearSpeechTimer]);
 
   return { play, stop, isPlaying, progress };
 }
@@ -620,9 +607,9 @@ export function startZombieMusic() {
   stopZombieMusic();
   
   try {
-    const ctx = getAudioContext();
+    const ctx = getSharedAudioContext();
     if (ctx.state === 'suspended') {
-      ctx.resume();
+      void ctx.resume();
     }
     
     let step = 0;
@@ -651,6 +638,11 @@ export function startZombieMusic() {
         osc.connect(filter);
         filter.connect(gain);
         gain.connect(ctx.destination);
+        osc.onended = () => {
+          osc.disconnect();
+          filter.disconnect();
+          gain.disconnect();
+        };
         
         osc.start(t);
         osc.stop(t + 0.4);
@@ -687,6 +679,10 @@ export function playZombieKillSound() {
     
     osc.connect(gain);
     gain.connect(ctx.destination);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
     osc.start(t);
     osc.stop(t + 0.16);
   });
@@ -715,6 +711,11 @@ export function playZombieDamageSound() {
     osc1.connect(gain);
     osc2.connect(gain);
     gain.connect(ctx.destination);
+    osc1.onended = () => {
+      osc1.disconnect();
+      osc2.disconnect();
+      gain.disconnect();
+    };
     
     osc1.start(t);
     osc2.start(t);

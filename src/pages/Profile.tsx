@@ -268,14 +268,33 @@ export function Profile() {
   };
 
   const handleSwitchLearnerMode = async (mode: LearnerMode) => {
-    await updateUserData({
-      learnerMode: mode,
-      relaxedTimer: mode === 'kids',
-      parentalGateEnabled: mode === 'kids',
-    });
-    if (mode === 'adults') {
+    if (mode === 'kids') {
+      await updateUserData({
+        learnerMode: 'kids',
+        relaxedTimer: true,
+        parentalGateEnabled: true,
+      });
+      // Immediately re-arm the Grown-Up Math Check and leave Settings so a child
+      // cannot toggle back to Adults Mode without solving the gate.
       setGateUnlocked(false);
+      setActiveTab('progress');
+      return;
     }
+
+    const switchToAdults = () => {
+      void updateUserData({
+        learnerMode: 'adults',
+        relaxedTimer: false,
+        parentalGateEnabled: false,
+      });
+      setGateUnlocked(false);
+    };
+
+    if (isKidsMode && userData?.parentalGateEnabled !== false && !gateUnlocked) {
+      runProtected(switchToAdults);
+      return;
+    }
+    switchToAdults();
   };
 
   if (loading && !userData) {

@@ -128,6 +128,16 @@ export function useAppTour(): UseAppTourApi {
       return step;
     });
 
+    let finalized = false;
+    const completeOnce = () => {
+      if (finalized) return;
+      finalized = true;
+      activeDriver = null;
+      startedHereRef.current = false;
+      void finalizeTour(options.tourId, finishedByAction, options.rewardGems ?? 0);
+      if (finishedByAction) options.onFinishedAction?.();
+    };
+
     const instance = driver({
       steps,
       animate: true,
@@ -162,13 +172,11 @@ export function useAppTour(): UseAppTourApi {
         }, 0);
       },
       onCloseClick: () => {
+        completeOnce();
         instance.destroy();
       },
       onDestroyed: () => {
-        activeDriver = null;
-        startedHereRef.current = false;
-        void finalizeTour(options.tourId, finishedByAction, options.rewardGems ?? 0);
-        if (finishedByAction) options.onFinishedAction?.();
+        completeOnce();
       },
     });
 

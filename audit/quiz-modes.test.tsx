@@ -22,6 +22,7 @@ import { UserData } from '../src/models/user';
 
 vi.mock('../src/features/audio/hooks/useAudio', () => ({
   stopAllActiveAudio: vi.fn(),
+  playTapSound: vi.fn(),
   playSuccessSound: vi.fn(),
   playFailureSound: vi.fn(),
   playCompleteSound: vi.fn(),

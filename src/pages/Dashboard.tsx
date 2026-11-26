@@ -26,6 +26,7 @@ import { AdBanner } from '../features/monetization/components/AdElements';
 import { Modal, Spinner, ErrorState } from '../components/ui';
 import { SunMark } from '../components/ui/SunMark';
 import { useAppTour } from '../features/tour/useAppTour';
+import { useFavorites } from '../hooks/useFavorites';
 import {
   WELCOME_TOUR_ID,
   TOUR_CHAIN_STORAGE_KEY,
@@ -59,6 +60,7 @@ const MOTIVATIONAL_QUOTES = [
 export function Dashboard() {
   const { userData, logout, language, updateUserData, loading, profileError, retryProfileLoad } = useAuth();
   const navigate = useNavigate();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [dailyWord, setDailyWord] = useState(academicVocabulary[0]);
 
   const [isDailyGoalOpen, setIsDailyGoalOpen] = useState(false);
@@ -91,7 +93,7 @@ export function Dashboard() {
   const { startTour } = useAppTour();
   const tourAttemptedRef = useRef(false);
   useEffect(() => {
-    if (loading || !userData || userData.isOnboarded === false) return;
+    if (loading || !userData || userData.isOnboarded === false || isDailyGoalOpen) return;
     if (tourAttemptedRef.current) return;
     let forcedReplay = false;
     try {
@@ -103,6 +105,7 @@ export function Dashboard() {
 
     const timer = window.setTimeout(() => {
       if (tourAttemptedRef.current) return;
+      if (globalThis.document !== undefined && document.querySelector('[role="dialog"]')) return;
       tourAttemptedRef.current = true;
       if (forcedReplay) {
         try {
@@ -124,7 +127,7 @@ export function Dashboard() {
       });
     }, 800);
     return () => window.clearTimeout(timer);
-  }, [loading, userData, language, startTour]);
+  }, [loading, userData, language, startTour, isDailyGoalOpen]);
 
   // Celebrate once per session when daily XP goal is crossed
   useEffect(() => {
@@ -261,13 +264,11 @@ export function Dashboard() {
     });
   })();
 
-  const isDailyWordFav = (safeUserData.favorites || []).includes(dailyWord.id);
+  const dailyWordKey = `acad_${dailyWord.id}`;
+  const isDailyWordFav = isFavorite(dailyWordKey) || isFavorite(dailyWord.id);
   const toggleDailyWordFav = () => {
-    const currentFavs = safeUserData.favorites || [];
-    const nextFavs = isDailyWordFav
-      ? currentFavs.filter((id) => id !== dailyWord.id)
-      : [...currentFavs, dailyWord.id];
-    void updateUserData({ favorites: nextFavs });
+    const keyToToggle = isFavorite(dailyWord.id) ? dailyWord.id : dailyWordKey;
+    toggleFavorite(keyToToggle);
   };
 
   const labels = pickLocalized(language, {
@@ -345,7 +346,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
         {/* Hero Card with Primary Continue Learning CTA */}
         <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-line-soft dark:border-slate-800 rounded-3xl p-6 shadow-flat relative overflow-hidden flex flex-col justify-between gap-5">
-          <SunMark className="absolute -end-10 -top-10 w-44 h-44 text-[#FFB300] opacity-[0.08] pointer-events-none" />
+          <SunMark className="absolute -end-10 -top-10 w-44 h-44 text-[var(--kq-gold)] opacity-[0.08] pointer-events-none" />
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div className="min-w-0">
               {isKidsMode && (
@@ -379,7 +380,7 @@ export function Dashboard() {
               type="button"
               data-tour="next-lesson"
               onClick={() => navigate(`/quiz/${nextLessonData.lesson.id}`)}
-              className="relative z-10 w-full text-start bg-[#FFB300] hover:bg-[#E69500] text-[#432C00] rounded-2xl p-4 sm:p-5 flex justify-between items-center gap-4 shadow-[0_3px_0_#E69500] transition-all cursor-pointer group"
+              className="relative z-10 w-full text-start bg-[var(--kq-gold)] hover:bg-[var(--kq-gold-hover)] text-[var(--kq-gold-on)] rounded-2xl p-4 sm:p-5 flex justify-between items-center gap-4 shadow-[0_3px_0_var(--kq-gold-dark)] transition-all cursor-pointer group"
             >
               <div className="min-w-0 space-y-0.5">
                 <span className="text-xs font-extrabold uppercase tracking-wider opacity-80 block">
@@ -403,7 +404,7 @@ export function Dashboard() {
           {/* Daily Kurdish proverb (Adults Mode) */}
           {!isKidsMode && (
             <div className="relative z-10 pt-3 border-t border-line dark:border-slate-800 flex items-start gap-2.5">
-              <SunMark className="w-4 h-4 text-[#FFB300] shrink-0 mt-1" />
+              <SunMark className="w-4 h-4 text-[var(--kq-gold)] shrink-0 mt-1" />
               <div className="min-w-0">
                 <div className="font-display text-sm font-bold text-ink italic leading-relaxed">
                   <bdi dir="ltr">“ {MOTIVATIONAL_QUOTES[quoteIdx].ku} ”</bdi>
@@ -428,7 +429,7 @@ export function Dashboard() {
                   className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
                     dailyGoalReached
                       ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600'
-                      : 'bg-[#FFF3D6] dark:bg-[#3A2F14] text-[#B8860B] dark:text-[#FFCE6B]'
+                      : 'bg-[var(--kq-surface-2)] text-[var(--kq-gold-text)]'
                   }`}
                 >
                   {dailyGoalReached ? <Trophy className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
@@ -453,7 +454,7 @@ export function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setIsDailyGoalOpen(true)}
-                  className="shrink-0 min-h-[44px] px-4 rounded-xl bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] border border-[#FFB300]/40 font-extrabold text-xs cursor-pointer hover:bg-[#FFE7B3] transition-colors whitespace-nowrap"
+                  className="shrink-0 min-h-[44px] px-4 rounded-xl bg-[var(--kq-surface-2)] text-[var(--kq-gold-text)] border border-[var(--kq-gold)]/40 font-extrabold text-xs cursor-pointer hover:opacity-90 transition-opacity whitespace-nowrap"
                 >
                   {t(language, 'goal_adjust')}
                 </button>
@@ -470,7 +471,7 @@ export function Dashboard() {
             >
               <div
                 className={`h-full rounded-full transition-all duration-700 ease-out ${
-                  dailyGoalReached ? 'bg-emerald-500' : 'bg-[#FFB300]'
+                  dailyGoalReached ? 'bg-emerald-500' : 'bg-[var(--kq-gold)]'
                 }`}
                 style={{ width: `${Math.min(100, Math.round((xpTodaySafe / dailyGoalTarget) * 100))}%` }}
               />
@@ -485,7 +486,7 @@ export function Dashboard() {
                       d.isActive
                         ? 'bg-orange-500 text-white'
                         : d.isToday
-                          ? 'bg-[#FFF6E0] dark:bg-[#3A2F14] text-[#8A6100] dark:text-[#FFCE6B] border border-[#FFB300]'
+                          ? 'bg-[var(--kq-surface-2)] text-[var(--kq-gold-text)] border border-[var(--kq-gold)]'
                           : 'bg-slate-100 dark:bg-slate-800 text-muted'
                     }`}
                   >
@@ -542,7 +543,7 @@ export function Dashboard() {
 
           <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden relative" dir="ltr">
             <div
-              className="bg-[#FFB300] h-full rounded-full transition-all duration-700 ease-out"
+              className="bg-[var(--kq-gold)] h-full rounded-full transition-all duration-700 ease-out"
               style={{ width: `${levelProgress.percent}%` }}
             />
           </div>
@@ -652,6 +653,7 @@ export function Dashboard() {
                   } catch {
                     /* ignore */
                   }
+                  setIsDailyGoalOpen(false);
                 }}
                 className={`w-full p-4 rounded-3xl border-2 flex items-center gap-3.5 transition-all cursor-pointer text-start bg-white dark:bg-slate-900 ${
                   active

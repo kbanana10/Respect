@@ -5,7 +5,14 @@
  * category strengths/weaknesses profiling, and multi-mode quiz structures.
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { stopAllActiveAudio, playSuccessSound, playFailureSound, playCompleteSound } from '../../audio/hooks/useAudio';
+import {
+  stopAllActiveAudio,
+  playSuccessSound,
+  playFailureSound,
+  playCompleteSound,
+  playTapSound,
+} from '../../audio/hooks/useAudio';
+import { shouldEnableQuizHearts } from '../../../domain/soundPresets';
 import { Language, UserData } from '../../../models/user';
 import { learningPath } from '../../../data/learningPath';
 import { Question, QuizMode } from '../types';
@@ -57,6 +64,7 @@ export function useQuizEngine({
   // Game states
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [missedQuestions, setMissedQuestions] = useState<Question[]>([]);
@@ -64,15 +72,13 @@ export function useQuizEngine({
   const [earnedGems, setEarnedGems] = useState(0);
 
   /**
-   * HEARTS: standard quizzes give the learner 3 hearts; a wrong answer costs
-   * one and running out ends the session early (partial rewards still pay
-   * out). Review/practice modules are deliberately heart-free — punishing a
-   * mistake-review session for making mistakes would be absurd.
+   * HEARTS: standard adult quizzes give the learner 3 hearts; a wrong answer
+   * costs one and running out ends the session early (partial rewards still
+   * pay out). Kids Mode and review/practice modules are deliberately
+   * heart-free so children learn without fear of being kicked out.
    */
   const HEARTS_PER_QUIZ = 3;
-  const heartsEnabled = !(
-    moduleId === 'srs_review' || moduleId === 'review_due' || moduleId === 'review_mistakes'
-  );
+  const heartsEnabled = shouldEnableQuizHearts(moduleId, userData?.learnerMode);
   const [hearts, setHearts] = useState<number | null>(heartsEnabled ? HEARTS_PER_QUIZ : null);
   const heartsRef = useRef<number | null>(heartsEnabled ? HEARTS_PER_QUIZ : null);
 
@@ -82,9 +88,9 @@ export function useQuizEngine({
     setHearts(heartsRef.current);
   }, []);
 
-
   const initializedRef = useRef<string | null>(null);
   const scoreRef = useRef(0);
+  const comboRef = useRef(0);
   const finishStartedRef = useRef(false);
   const questionStartTimeRef = useRef<number>(Date.now());
 
@@ -170,6 +176,8 @@ export function useQuizEngine({
     setIsFinished(false);
     setScore(0);
     scoreRef.current = 0;
+    comboRef.current = 0;
+    setCombo(0);
     finishStartedRef.current = false;
     setHasChecked(false);
     setSelectedOption(null);
@@ -190,6 +198,14 @@ export function useQuizEngine({
     questionStartTimeRef.current = Date.now();
     initializedRef.current = initKey;
   }, [moduleId, language, selectedQuizMode, userData, heartsEnabled, clearAdvanceTimer]);
+
+  // Keep hearts synced if userData loads asynchronously after quiz init (e.g., Kids Mode profile hydration)
+  useEffect(() => {
+    if (!heartsEnabled && heartsRef.current !== null) {
+      heartsRef.current = null;
+      setHearts(null);
+    }
+  }, [heartsEnabled]);
 
   // Audio lifecycle state tracking: stop playing on transitions (question, mode changes or finish)
   useEffect(() => {
@@ -304,11 +320,16 @@ export function useQuizEngine({
     stopAllActiveAudio();
 
     if (correct) {
-      playSuccessSound();
+      const nextCombo = comboRef.current + 1;
+      comboRef.current = nextCombo;
+      setCombo(nextCombo);
+      playSuccessSound(nextCombo);
       const nextScore = scoreRef.current + 1;
       scoreRef.current = nextScore;
       setScore(nextScore);
     } else {
+      comboRef.current = 0;
+      setCombo(0);
       playFailureSound();
       loseHeart();
       if (currentQ) {
@@ -384,11 +405,16 @@ export function useQuizEngine({
     stopAllActiveAudio();
 
     if (isAnsCorrect) {
-      playSuccessSound();
+      const nextCombo = comboRef.current + 1;
+      comboRef.current = nextCombo;
+      setCombo(nextCombo);
+      playSuccessSound(nextCombo);
       const nextScore = scoreRef.current + 1;
       scoreRef.current = nextScore;
       setScore(nextScore);
     } else {
+      comboRef.current = 0;
+      setCombo(0);
       playFailureSound();
       loseHeart();
       if (currentQ) {
@@ -442,6 +468,7 @@ export function useQuizEngine({
   }, [advanceToNext]);
 
   const handleCharClick = useCallback((char: string) => {
+    playTapSound(0);
     setTypingAnswer(prev => prev + char);
     // SAFETY: #writing-input is rendered exclusively as an <input> by TranslateQuestion.
     const inputEl = document.getElementById('writing-input') as HTMLInputElement | null;
@@ -461,6 +488,8 @@ export function useQuizEngine({
     setCurrentIndex(0);
     setScore(0);
     scoreRef.current = 0;
+    comboRef.current = 0;
+    setCombo(0);
     finishStartedRef.current = false;
     setIsFinished(false);
     setShowConfetti(false);
@@ -485,6 +514,7 @@ export function useQuizEngine({
     hasChecked,
     isCorrect,
     score,
+    combo,
     hearts,
     isFinished,
     showConfetti,

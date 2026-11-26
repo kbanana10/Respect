@@ -16,8 +16,10 @@ import { playCompleteSound } from '../src/features/audio/hooks/useAudio';
 
 vi.mock('../src/features/audio/hooks/useAudio', () => ({
   stopAllActiveAudio: vi.fn(),
+  playTapSound: vi.fn(),
   playSuccessSound: vi.fn(),
   playFailureSound: vi.fn(),
+  playRewardSound: vi.fn(),
   playCompleteSound: vi.fn(),
   playZombieDamageSound: vi.fn(),
 }));
@@ -50,10 +52,10 @@ describe('Word Matching — single-round advance guarantee', () => {
     // Buttons render the word text, so pair them via VOCAB lookups.
     for (const w of VOCAB) {
       const kuBtns = screen.queryAllByText(w.ku);
-      const arBtns = screen.queryAllByText(w.ar);
-      if (kuBtns.length && arBtns.length) {
+      const meaningBtns = screen.queryAllByText(w.en);
+      if (kuBtns.length && meaningBtns.length) {
         fireEvent.click(kuBtns[0]);
-        fireEvent.click(arBtns[0]);
+        fireEvent.click(meaningBtns[0]);
         act(() => { vi.advanceTimersByTime(50); });
       }
     }

@@ -78,6 +78,19 @@ export function Modal({
     };
   }, [open]);
 
+  // Global Escape handler so pressing Escape closes the dialog even before focus enters panelRef.
+  useEffect(() => {
+    if (!open) return;
+    const onWinKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onWinKeyDown);
+    return () => window.removeEventListener('keydown', onWinKeyDown);
+  }, [open, onClose]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -131,10 +144,10 @@ export function Modal({
             aria-describedby={description ? descId : undefined}
             tabIndex={-1}
             onKeyDown={handleKeyDown}
-            initial={variant === 'sheet' ? { y: '100%', opacity: 0.6 } : { scale: 0.95, opacity: 0 }}
+            initial={variant === 'sheet' ? { y: 24, opacity: 0 } : { scale: 0.96, opacity: 0 }}
             animate={variant === 'sheet' ? { y: 0, opacity: 1 } : { scale: 1, opacity: 1 }}
-            exit={variant === 'sheet' ? { y: '100%', opacity: 0.6 } : { scale: 0.95, opacity: 0 }}
-            transition={{ type: 'spring', damping: 26, stiffness: 240 }}
+            exit={variant === 'sheet' ? { y: 24, opacity: 0 } : { scale: 0.96, opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             className={cn(
               'relative z-10 w-full max-w-md bg-white dark:bg-slate-950',
               'border border-line shadow-[0_24px_60px_rgba(0,0,0,0.18)]',
@@ -163,7 +176,7 @@ export function Modal({
                 <button
                   type="button"
                   onClick={onClose}
-                  aria-label="Close dialog"
+                  aria-label={closeLabel}
                   className="shrink-0 min-w-[44px] min-h-[44px] -me-2 -mt-2 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />

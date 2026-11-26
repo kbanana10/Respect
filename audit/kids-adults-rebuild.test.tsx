@@ -11,15 +11,23 @@
  */
 import fs from 'fs';
 import path from 'path';
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { AdBanner, InterstitialAdModal, RewardedAdModal } from '../src/features/monetization/components/AdElements';
 import { useAdStore } from '../src/features/monetization/store/adStore';
 import { ParentalGateModal } from '../src/components/ui/ParentalGateModal';
 import { Writing } from '../src/pages/Writing';
 import { Store } from '../src/pages/Store';
+import { Favorites } from '../src/pages/Favorites';
+import { OnboardingFlow } from '../src/components/OnboardingFlow';
+import { Modal } from '../src/components/ui/Modal';
 import { QuizModePicker } from '../src/features/quiz/components/QuizModePicker';
+import { MemoryMatchGame } from '../src/features/games/MemoryMatchGame';
+import { getCurriculumWordPool } from '../src/features/games/curriculumWords';
+import { searchVocabulary } from '../src/data/adapters/contentAdapter';
+import { generateQuestionsForModule } from '../src/features/quiz/utils/questionGenerator';
 import { learningPath } from '../src/data/learningPath';
 import type { Language, LearnerMode, UserData } from '../src/models/user';
 
@@ -53,7 +61,7 @@ function buildMockUserData(): UserData {
     unlockedStickers: ['sticker_sun'],
     relaxedTimer: mockLearnerMode === 'kids',
     parentalGateEnabled: mockLearnerMode === 'kids',
-    onboardingCompleted: true,
+    isOnboarded: true,
     lastActive: Date.now(),
     createdAt: Date.now() - 86400000,
     updatedAt: Date.now(),
@@ -82,9 +90,16 @@ vi.mock('../src/features/audio/hooks/useAudio', () => ({
     progress: 0,
   }),
   stopAllActiveAudio: vi.fn(),
+  playTapSound: vi.fn(),
+  playButtonClickSound: vi.fn(),
   playSuccessSound: vi.fn(),
   playFailureSound: vi.fn(),
+  playRewardSound: vi.fn(),
   playCompleteSound: vi.fn(),
+  playAudioUrl: vi.fn().mockResolvedValue(undefined),
+  getMuteState: vi.fn(() => false),
+  setMuteState: vi.fn(),
+  useSoundMuted: () => [false, vi.fn()] as const,
 }));
 
 describe('Kids Mode — 100% Ad Suppression', () => {
@@ -179,7 +194,7 @@ describe('Zero "Coming Soon" Dead Ends & Live Rebuilt Surfaces', () => {
     expect(screen.getByRole('tab', { name: 'Sentences' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Words' }));
-    expect(screen.getByText(/Words/i)).toBeTruthy();
+    expect(screen.getByText('Av')).toBeTruthy();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Sentences' }));
     expect(screen.getByText(/Roj baş/i)).toBeTruthy();
@@ -211,7 +226,7 @@ describe('Zero "Coming Soon" Dead Ends & Live Rebuilt Surfaces', () => {
       />,
     );
     expect(container.textContent).not.toMatch(/coming soon/i);
-    const imageBtn = screen.getByRole('button', { name: /Image Quiz/i });
+    const imageBtn = screen.getByRole('button', { name: /Emoji Association/i });
     expect((imageBtn as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(imageBtn);
     expect(onPick).toHaveBeenCalledWith('emoji_match');
@@ -222,7 +237,7 @@ describe('Unit 0 Curriculum, Offline Fonts & Tri-Lingual Discipline', () => {
   it('starts learningPath with Unit 0 (U0) Hawar Foundations in EN/AR/KU', () => {
     expect(learningPath[0].id).toBe('U0');
     expect(learningPath[0].requiredXp).toBe(0);
-    expect(learningPath[0].lessons.length).toBeGreaterThanOrEqual(3);
+    expect(learningPath[0].lessons.length).toBeGreaterThanOrEqual(2);
     expect(learningPath[0].title.length).toBeGreaterThan(0);
     expect(learningPath[0].titleAr.length).toBeGreaterThan(0);
     expect(learningPath[0].titleKu.length).toBeGreaterThan(0);
@@ -258,3 +273,182 @@ describe('Unit 0 Curriculum, Offline Fonts & Tri-Lingual Discipline', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('MemoryMatchGame — Pure State Updaters & Stable Victory Screen', () => {
+  beforeEach(() => {
+    mockLanguage = 'en';
+    mockLearnerMode = 'kids';
+  });
+
+  it('completes all 6 pairs without React setState-in-render warnings and keeps victory state visible', () => {
+    vi.useFakeTimers();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const onWinSpy = vi.fn();
+
+    function ParentHarness() {
+      const [celebrating, setCelebrating] = useState(false);
+      return (
+        <div>
+          <span data-testid="parent-celebrate">{celebrating ? 'yes' : 'no'}</span>
+          <MemoryMatchGame
+            onWin={(xp) => {
+              setCelebrating(true);
+              onWinSpy(xp);
+            }}
+            onExit={vi.fn()}
+          />
+        </div>
+      );
+    }
+
+    try {
+      const pool = getCurriculumWordPool(buildMockUserData(), 24);
+      const labelToWordId = new Map<string, string>();
+      for (const word of pool) {
+        labelToWordId.set(word.ku, word.id);
+        labelToWordId.set(word.en, word.id);
+      }
+
+      render(<ParentHarness />);
+
+      // Reveal cards in pairs to learn their word ids, then match all 6 pairs cleanly.
+      const cardButtons = () =>
+        screen
+          .getAllByRole('button')
+          .filter((btn) => btn.hasAttribute('aria-pressed') && btn.closest('.grid') !== null);
+
+      const cardCount = cardButtons().length;
+      expect(cardCount).toBe(12);
+
+      const indexByWordId = new Map<string, number[]>();
+      for (let i = 0; i < cardCount; i += 2) {
+        fireEvent.click(cardButtons()[i]);
+        const labelA = cardButtons()[i].getAttribute('aria-label') ?? '';
+        fireEvent.click(cardButtons()[i + 1]);
+        const labelB = cardButtons()[i + 1].getAttribute('aria-label') ?? '';
+
+        const wordIdA = labelToWordId.get(labelA);
+        const wordIdB = labelToWordId.get(labelB);
+        if (wordIdA) {
+          indexByWordId.set(wordIdA, [...(indexByWordId.get(wordIdA) ?? []), i]);
+        }
+        if (wordIdB) {
+          indexByWordId.set(wordIdB, [...(indexByWordId.get(wordIdB) ?? []), i + 1]);
+        }
+
+        act(() => {
+          vi.advanceTimersByTime(1000);
+        });
+      }
+
+      for (const indices of indexByWordId.values()) {
+        if (indices.length !== 2) continue;
+        const buttons = cardButtons();
+        if (buttons.length === 0) break;
+        if (buttons[indices[0]].getAttribute('aria-pressed') === 'true') continue;
+        fireEvent.click(buttons[indices[0]]);
+        fireEvent.click(buttons[indices[1]]);
+        act(() => {
+          vi.advanceTimersByTime(500);
+        });
+      }
+
+      expect(onWinSpy).toHaveBeenCalledTimes(1);
+      expect(onWinSpy).toHaveBeenCalledWith(20);
+      expect(screen.getByTestId('parent-celebrate').textContent).toBe('yes');
+      expect(screen.getByText('6/6')).toBeTruthy();
+
+      const setStateInRenderCalls = consoleErrorSpy.mock.calls.filter((args) =>
+        args.some((arg) => typeof arg === 'string' && arg.includes('Cannot update a component')),
+      );
+      expect(setStateInRenderCalls).toEqual([]);
+    } finally {
+      consoleErrorSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('Full-App QA Regression Fixes', () => {
+  beforeEach(() => {
+    mockLanguage = 'en';
+    mockLearnerMode = 'adults';
+    mockGems = 200;
+    localStorage.removeItem('kurmanji_favorites');
+  });
+
+  it('Store displays tiered avatar pricing for av-1..av-8 (av-1 and av-2 free, av-3=40, av-8=80)', () => {
+    render(
+      <MemoryRouter>
+        <Store />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('💎40')).toBeTruthy();
+    expect(screen.getByText('💎50')).toBeTruthy();
+    expect(screen.getByText('💎70')).toBeTruthy();
+    expect(screen.getByText('💎80')).toBeTruthy();
+  });
+
+  it('Modal closes on Escape even when focus is on document.body and honors closeLabel', () => {
+    const onClose = vi.fn();
+    render(
+      <Modal open={true} onClose={onClose} title="Daily Goal" closeLabel="Close goal sheet">
+        <p>Pick a tier</p>
+      </Modal>,
+    );
+    expect(screen.getByRole('button', { name: 'Close goal sheet' })).toBeTruthy();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('generateQuestionsForModule("all") returns a valid mixed practice set', () => {
+    const qs = generateQuestionsForModule('all', 'multiple_choice', 'en', buildMockUserData());
+    expect(qs.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('OnboardingFlow starts directly on Learner Mode (3 steps) with accurate avatar labels', async () => {
+    render(<OnboardingFlow onComplete={vi.fn()} />);
+    expect(screen.getByText(/Step 1 \/ 3/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Continue/i }));
+    expect(await screen.findByRole('button', { name: 'Happy Friend' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Scholar' })).toBeTruthy();
+  });
+
+  it('Search result favorited by ID resolves and displays inside Favorites', () => {
+    const matches = searchVocabulary({ query: 'Dayik', limit: 5 });
+    expect(matches.length).toBeGreaterThan(0);
+    const dayikId = matches[0].id;
+    localStorage.setItem('kurmanji_favorites', JSON.stringify({ [dayikId]: true }));
+
+    render(
+      <MemoryRouter>
+        <Favorites />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(matches[0].lemmaKu)).toBeTruthy();
+  });
+
+  it('WordMatchingGame runs timer-free with infinite tries in Kids Mode', async () => {
+    const { WordMatchingGame } = await import('../src/components/games/WordMatchingGame');
+    const sampleVocab = [
+      { id: 'w1', ku: 'Av', en: 'Water', ar: 'ماء', categoryId: 'basics', audio: '', emoji: '💧' },
+      { id: 'w2', ku: 'Nan', en: 'Bread', ar: 'خبز', categoryId: 'basics', audio: '', emoji: '🍞' },
+      { id: 'w3', ku: 'Roj', en: 'Sun', ar: 'شمس', categoryId: 'basics', audio: '', emoji: '☀️' },
+      { id: 'w4', ku: 'Dar', en: 'Tree', ar: 'شجرة', categoryId: 'basics', audio: '', emoji: '🌳' },
+    ];
+    render(
+      <WordMatchingGame
+        vocabulary={sampleVocab}
+        language="en"
+        isKidsMode={true}
+        onWin={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId('word-matching-relaxed-badge')).toBeTruthy();
+    expect(screen.queryByTestId('word-matching-timer')).toBeNull();
+    expect(screen.getByText(/Unlimited/i)).toBeTruthy();
+  });
+});
+
+

@@ -26,14 +26,58 @@ const LANGUAGES: Array<{ id: Language; native: string; hint: string; dir: 'ltr' 
   { id: 'en', native: 'English', hint: 'Left-to-right interface', dir: 'ltr' },
 ];
 
+const LOGIN_DRAFT_PHASE_KEY = 'kq_login_draft_phase';
+const LOGIN_DRAFT_NAME_KEY = 'kq_login_draft_name';
+const LOGIN_DRAFT_LEGAL_KEY = 'kq_login_draft_legal';
+
+interface LoginDraft {
+  readonly phase: Phase;
+  readonly name: string;
+  readonly legalAccepted: boolean;
+}
+
+function readLoginDraft(): LoginDraft {
+  try {
+    const rawPhase = sessionStorage.getItem(LOGIN_DRAFT_PHASE_KEY);
+    const phase: Phase =
+      rawPhase === 'language' || rawPhase === 'auth' ? rawPhase : 'welcome';
+    const name = sessionStorage.getItem(LOGIN_DRAFT_NAME_KEY) ?? '';
+    const legalAccepted = sessionStorage.getItem(LOGIN_DRAFT_LEGAL_KEY) === 'true';
+    return { phase, name, legalAccepted };
+  } catch {
+    return { phase: 'welcome', name: '', legalAccepted: false };
+  }
+}
+
 export function Login() {
   const { signInWithName, loginWithGoogle, user, language, setLanguage } = useAuth();
   const navigate = useNavigate();
-  const [phase, setPhase] = useState<Phase>('welcome');
-  const [name, setName] = useState('');
+  const initialDraft = readLoginDraft();
+  const [phase, setPhase] = useState<Phase>(initialDraft.phase);
+  const [name, setName] = useState(initialDraft.name);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [legalAccepted, setLegalAccepted] = useState(false);
+  const [legalAccepted, setLegalAccepted] = useState(initialDraft.legalAccepted);
   const [legalNudge, setLegalNudge] = useState(false);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(LOGIN_DRAFT_PHASE_KEY, phase);
+      sessionStorage.setItem(LOGIN_DRAFT_NAME_KEY, name);
+      sessionStorage.setItem(LOGIN_DRAFT_LEGAL_KEY, legalAccepted ? 'true' : 'false');
+    } catch {
+      /* ignore */
+    }
+  }, [phase, name, legalAccepted]);
+
+  const clearLoginDraft = () => {
+    try {
+      sessionStorage.removeItem(LOGIN_DRAFT_PHASE_KEY);
+      sessionStorage.removeItem(LOGIN_DRAFT_NAME_KEY);
+      sessionStorage.removeItem(LOGIN_DRAFT_LEGAL_KEY);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const recordLegalAcceptance = () => {
     try { localStorage.setItem('kurdish_quest_legal_accepted', new Date().toISOString()); } catch {}
@@ -48,6 +92,7 @@ export function Login() {
 
   useEffect(() => {
     if (user) {
+      clearLoginDraft();
       navigate('/');
     }
   }, [user, navigate]);
@@ -57,6 +102,7 @@ export function Login() {
     if (!requireLegal()) return;
     if (name.trim()) {
       recordLegalAcceptance();
+      clearLoginDraft();
       signInWithName(name.trim());
     }
   };
@@ -64,6 +110,7 @@ export function Login() {
   const handleGoogle = async () => {
     if (!requireLegal()) return;
     recordLegalAcceptance();
+    clearLoginDraft();
     setAuthError(null);
     setGoogleBusy(true);
     try {
@@ -84,7 +131,7 @@ export function Login() {
   const phaseIndex = phase === 'welcome' ? 0 : phase === 'language' ? 1 : 2;
 
   return (
-    <div className="flex flex-col items-center min-h-[92vh] p-6 text-center bg-gradient-to-b from-indigo-50/20 via-white to-white dark:from-indigo-950/40 dark:via-slate-950 dark:to-slate-950 relative">
+    <div className="flex flex-col items-center min-h-screen p-6 text-center bg-gradient-to-b from-indigo-50/20 via-white to-white dark:from-indigo-950/40 dark:via-slate-950 dark:to-slate-950 relative">
 
       {/* Step dots + back */}
       <div className="w-full max-w-sm flex items-center justify-between pt-2 pb-4 min-h-[52px]">
@@ -247,31 +294,39 @@ export function Login() {
                     : 'border-line-soft bg-white dark:bg-slate-900'
                 }`}
               >
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={legalAccepted}
-                    onChange={(e) => {
-                      setLegalAccepted(e.target.checked);
-                      if (e.target.checked) setLegalNudge(false);
-                    }}
-                    className="sr-only"
-                  />
-                  <span
-                    aria-hidden="true"
-                    className={`mt-0.5 w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
-                      legalAccepted
-                        ? 'bg-[#FFB300] border-[#FFB300] text-[#432C00]'
-                        : 'bg-white dark:bg-slate-900 border-line-soft text-transparent'
-                    }`}
+                <div className="flex items-start gap-3 select-none">
+                  <label
+                    htmlFor="kq-legal-consent"
+                    className="mt-0.5 flex items-center justify-center cursor-pointer shrink-0"
                   >
-                    <Check className="w-4 h-4 stroke-[3.5]" />
-                  </span>
+                    <input
+                      id="kq-legal-consent"
+                      type="checkbox"
+                      checked={legalAccepted}
+                      onChange={(e) => {
+                        setLegalAccepted(e.target.checked);
+                        if (e.target.checked) setLegalNudge(false);
+                      }}
+                      className="sr-only peer"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-[#FFB300] ${
+                        legalAccepted
+                          ? 'bg-[#FFB300] border-[#FFB300] text-[#432C00]'
+                          : 'bg-white dark:bg-slate-900 border-line-soft text-transparent'
+                      }`}
+                    >
+                      <Check className="w-4 h-4 stroke-[3.5]" />
+                    </span>
+                  </label>
                   <span className="text-xs font-semibold text-ink leading-relaxed">
-                    {t(language, 'legal_agree_prefix')}{' '}
+                    <label htmlFor="kq-legal-consent" className="cursor-pointer">
+                      {t(language, 'legal_agree_prefix')}
+                    </label>{' '}
                     <button
                       type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate('/terms'); }}
+                      onClick={() => navigate('/terms')}
                       className="text-[#B45309] dark:text-[#FFCE6B] font-extrabold underline underline-offset-2 bg-transparent border-none p-0 min-h-0 cursor-pointer"
                     >
                       {t(language, 'terms_of_service')}
@@ -279,13 +334,13 @@ export function Login() {
                     {t(language, 'legal_and')}{' '}
                     <button
                       type="button"
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigate('/privacy'); }}
+                      onClick={() => navigate('/privacy')}
                       className="text-[#B45309] dark:text-[#FFCE6B] font-extrabold underline underline-offset-2 bg-transparent border-none p-0 min-h-0 cursor-pointer"
                     >
                       {t(language, 'privacy_policy')}
                     </button>
                   </span>
-                </label>
+                </div>
                 {legalNudge && !legalAccepted && (
                   <p className="text-[11px] text-danger font-bold mt-2 ms-9" role="alert">
                     {t(language, 'legal_required_hint')}

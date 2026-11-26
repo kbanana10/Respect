@@ -13,7 +13,7 @@ import { useAuth } from '../store/AuthContext';
 import {
   Home, ArrowLeft, Search, User, Bell, X as CloseIcon,
   Gamepad2, Map, Flame, Smile, GraduationCap, Sparkles, Star, Compass, Award,
-  Settings as SettingsIcon, Heart, Trophy, ShoppingBag,
+  Settings as SettingsIcon, Heart, Trophy, ShoppingBag, Volume2, VolumeX,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { t, getLayoutDirection, pickLocalized } from '../localization/translations';
@@ -25,6 +25,7 @@ import { Modal, Button } from './ui';
 import { AVATARS } from '../constants/appConstants';
 import { DesktopSidebar, type NavItemConfig } from './layout/DesktopSidebar';
 import { MobileBottomNav } from './layout/MobileBottomNav';
+import { useSoundMuted } from '../features/audio/hooks/useAudio';
 
 interface HistoryStateWithUsr {
   usr?: string;
@@ -69,6 +70,7 @@ export function MainLayout() {
   const isKidsMode = userData?.learnerMode === 'kids';
   const selectedHeaderAvatar = AVATARS.find((a) => a.id === userData?.avatarId) || AVATARS[0];
   const [showExitModal, setShowExitModal] = useState(false);
+  const [isSoundMuted, setSoundMuted] = useSoundMuted();
 
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const scrollPositionsRef = useRef<Record<string, number>>({});
@@ -166,11 +168,13 @@ export function MainLayout() {
     };
   }, []);
 
+  const isPublicLegalRoute = location.pathname === '/terms' || location.pathname === '/privacy';
+
   useEffect(() => {
-    if (!loading && !user && location.pathname !== '/login') {
+    if (!loading && !user && location.pathname !== '/login' && !isPublicLegalRoute) {
       navigate('/login');
     }
-  }, [user, loading, location, navigate]);
+  }, [user, loading, location.pathname, isPublicLegalRoute, navigate]);
 
   const lastKqFamilyEntryWasNumberFamily = (): boolean => {
     if (globalThis.window === undefined) return false;
@@ -187,6 +191,10 @@ export function MainLayout() {
 
   const handleSmartBack = () => {
     if (runBackInterceptors()) {
+      return;
+    }
+    if (!user && isPublicLegalRoute) {
+      navigate('/login');
       return;
     }
     if (location.pathname === '/vocabulary/numbers' && lastKqFamilyEntryWasNumberFamily()) {
@@ -230,8 +238,9 @@ export function MainLayout() {
 
   const isMainTab = routeMeta.isMainTab;
   const isLogin = routeMeta.hideHeader && location.pathname === '/login';
+  const isGuestLegal = !user && isPublicLegalRoute;
   const shouldHideHeader = routeMeta.hideHeader || isGameActive;
-  const shouldHideBottomNav = routeMeta.hideBottomNav || isGameActive || isLogin;
+  const shouldHideBottomNav = routeMeta.hideBottomNav || isGameActive || isLogin || isGuestLegal;
 
   useEffect(() => {
     if (globalThis.document !== undefined) {
@@ -285,6 +294,8 @@ export function MainLayout() {
       settings: 'Settings',
       streak: 'Current Streak',
       gems: 'Gems & Rewards',
+      muteAudio: 'Mute sounds',
+      unmuteAudio: 'Turn on sounds',
     },
     ar: {
       practiceNow: 'تمرّن الآن',
@@ -295,6 +306,8 @@ export function MainLayout() {
       settings: 'الإعدادات',
       streak: 'سلسلة الأيام',
       gems: 'الجواهر والمكافآت',
+      muteAudio: 'كتم الأصوات',
+      unmuteAudio: 'تشغيل الأصوات',
     },
     ku: {
       practiceNow: 'Niha Biceribîne',
@@ -305,6 +318,8 @@ export function MainLayout() {
       settings: 'Mîheng',
       streak: 'Rêza Rojane',
       gems: 'Cewher û Xelat',
+      muteAudio: 'Dengê bêdeng bike',
+      unmuteAudio: 'Dengê veke',
     },
   });
 
@@ -450,7 +465,7 @@ export function MainLayout() {
 
               <div className={cn('flex-1 min-w-0', isProfile ? 'text-center lg:text-start' : 'text-start')}>
                 {!isProfile && (
-                  <p dir="auto" className="text-xs font-bold text-[#8A6100] dark:text-[#FFCE6B] leading-none truncate">
+                  <p dir="auto" className="text-xs font-bold text-[var(--kq-gold-text)] leading-none truncate">
                     {routeMeta.brandLabel}
                   </p>
                 )}
@@ -460,19 +475,38 @@ export function MainLayout() {
               </div>
 
               <div className="flex items-center gap-2 ms-auto shrink-0">
+                {!isGuestLegal && (
+                  <button
+                    type="button"
+                    data-testid="global-sound-toggle"
+                    onClick={() => setSoundMuted(!isSoundMuted)}
+                    aria-label={isSoundMuted ? headerLabels.unmuteAudio : headerLabels.muteAudio}
+                    aria-pressed={isSoundMuted}
+                    title={isSoundMuted ? headerLabels.unmuteAudio : headerLabels.muteAudio}
+                    className={cn(
+                      'min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border transition-colors cursor-pointer focus-visible:ring-2 focus-visible:ring-[var(--kq-ring)]',
+                      isSoundMuted
+                        ? 'bg-slate-100 dark:bg-slate-800 border-line-soft dark:border-slate-700 text-slate-400 dark:text-slate-500'
+                        : 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/25',
+                    )}
+                  >
+                    {isSoundMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </button>
+                )}
+
                 {isProfile && (
                   <button
                     type="button"
                     onClick={() => window.dispatchEvent(new CustomEvent('kq:profile-settings'))}
                     aria-label={headerLabels.settings}
                     title={headerLabels.settings}
-                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-[#FFB300] focus-visible:ring-2 focus-visible:ring-[#FFB300]"
+                    className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer text-[var(--kq-gold)] focus-visible:ring-2 focus-visible:ring-[var(--kq-ring)]"
                   >
                     <SettingsIcon className="w-5 h-5" />
                   </button>
                 )}
 
-                {!isProfile && (
+                {!isProfile && !isGuestLegal && (
                   <div
                     data-tour="stats-pill"
                     className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 border border-line-soft dark:border-slate-700 rounded-xl px-3.5 py-2"

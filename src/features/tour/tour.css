@@ -78,16 +78,16 @@
   transform: scale(0.96);
 }
 
-/* Primary (Next / Done): Sun Gold CTA with the app's hard 2px shadow */
+/* Primary (Next / Done): Active Theme Accent CTA with hard 2px shadow */
 .driver-popover.kq-tour .driver-popover-footer button.driver-popover-next-btn {
-  background-color: #ffb300;
-  color: #432c00;
+  background-color: var(--kq-gold, #ffb300);
+  color: var(--kq-gold-on, #432c00);
   border: none;
-  box-shadow: 0 2px 0 #e69500;
+  box-shadow: 0 2px 0 var(--kq-gold-dark, #e69500);
 }
 
 .driver-popover.kq-tour .driver-popover-footer button.driver-popover-next-btn:hover {
-  background-color: #e69500;
+  background-color: var(--kq-gold-hover, #e69500);
 }
 
 /* Secondary (Back): quiet outline pill */

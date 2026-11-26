@@ -10,7 +10,13 @@ import { motion } from 'motion/react';
 import { Sparkles } from 'lucide-react';
 import { useAuth } from '../../store/AuthContext';
 import { t, pickLocalized } from '../../localization/translations';
-import { playSuccessSound, playFailureSound, playCompleteSound, playAudioUrl } from '../audio/hooks/useAudio';
+import {
+  playSuccessSound,
+  playFailureSound,
+  playCompleteSound,
+  playTapSound,
+  playAudioUrl,
+} from '../audio/hooks/useAudio';
 import { getCurriculumWordPool, type GameVocabItem } from './curriculumWords';
 import { GameShell } from './GameShell';
 
@@ -42,7 +48,15 @@ export function MemoryMatchGame({ onWin, onExit }: MemoryMatchGameProps) {
   const [finished, setFinished] = useState(false);
   const [missedWords, setMissedWords] = useState<GameVocabItem[]>([]);
 
+  const userDataRef = useRef(userData);
+  useEffect(() => {
+    userDataRef.current = userData;
+  }, [userData]);
+
   const selectedRef = useRef<number[]>([]);
+  const matchedPairsRef = useRef(0);
+  const comboRef = useRef(0);
+  const winAwardedRef = useRef(false);
   const flipTimerRef = useRef<number | null>(null);
 
   const buildDeck = useCallback(() => {
@@ -51,13 +65,16 @@ export function MemoryMatchGame({ onWin, onExit }: MemoryMatchGameProps) {
       flipTimerRef.current = null;
     }
     selectedRef.current = [];
+    matchedPairsRef.current = 0;
+    comboRef.current = 0;
+    winAwardedRef.current = false;
     setMoves(0);
     setMatchedPairs(0);
     setElapsed(0);
     setFinished(false);
     setMissedWords([]);
 
-    const pool = getCurriculumWordPool(userData, PAIR_COUNT * 2);
+    const pool = getCurriculumWordPool(userDataRef.current, PAIR_COUNT * 2);
     const chosen = [...pool].sort(() => Math.random() - 0.5).slice(0, PAIR_COUNT);
 
     const deck: MemoryCard[] = [];
@@ -88,7 +105,7 @@ export function MemoryMatchGame({ onWin, onExit }: MemoryMatchGameProps) {
     }
 
     setCards(deck.sort(() => Math.random() - 0.5));
-  }, [language, userData]);
+  }, [language]);
 
   useEffect(() => {
     buildDeck();
@@ -110,6 +127,8 @@ export function MemoryMatchGame({ onWin, onExit }: MemoryMatchGameProps) {
     const target = cards[index];
     if (!target || target.isFlipped || target.isMatched) return;
 
+    playTapSound(currentSel.length);
+
     const nextCards = cards.map((c, idx) => (idx === index ? { ...c, isFlipped: true } : c));
     setCards(nextCards);
 
@@ -127,25 +146,28 @@ export function MemoryMatchGame({ onWin, onExit }: MemoryMatchGameProps) {
       const second = nextCards[secondIdx];
 
       if (first.word.id === second.word.id && first.side !== second.side) {
-        playSuccessSound();
+        comboRef.current += 1;
+        playSuccessSound(comboRef.current);
         flipTimerRef.current = window.setTimeout(() => {
           flipTimerRef.current = null;
-          setCards((prev) => {
-            const updated = prev.map((c, idx) =>
+          setCards((prev) =>
+            prev.map((c, idx) =>
               idx === firstIdx || idx === secondIdx ? { ...c, isMatched: true } : c,
-            );
-            const pairs = updated.filter((c) => c.isMatched).length / 2;
-            setMatchedPairs(pairs);
-            if (pairs === PAIR_COUNT) {
-              playCompleteSound();
-              setFinished(true);
-              onWin(20);
-            }
-            return updated;
-          });
+            ),
+          );
           selectedRef.current = [];
+          const nextPairs = matchedPairsRef.current + 1;
+          matchedPairsRef.current = nextPairs;
+          setMatchedPairs(nextPairs);
+          if (nextPairs >= PAIR_COUNT && !winAwardedRef.current) {
+            winAwardedRef.current = true;
+            playCompleteSound();
+            setFinished(true);
+            onWin(20);
+          }
         }, 420);
       } else {
+        comboRef.current = 0;
         playFailureSound();
         setMissedWords((prev) => {
           const exists = prev.some((w) => w.id === first.word.id);
