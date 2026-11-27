@@ -15,7 +15,7 @@
     "clean": "rm -rf dist",
     "lint": "NODE_OPTIONS=--max-old-space-size=3072 tsc --noEmit",
     "test": "vitest run --config audit/vitest.config.ts",
-    "test:unit": "tsx --test src/domain/**/*.test.ts",
+    "test:unit": "tsx --test src/domain/**/*.test.ts src/lib/navigation.test.ts",
     "test:all": "npm run test:unit && npm test",
     "test:watch": "vitest --config audit/vitest.config.ts",
     "cap:sync": "npm run build && npx cap sync",

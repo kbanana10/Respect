@@ -18,12 +18,13 @@
 @theme {
   --breakpoint-xs: 480px;
   --animate-shake: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-arabic: "Noto Kufi Arabic", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Noto Kufi Arabic", "Noto Color Emoji", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Noto Kufi Arabic", "Noto Color Emoji", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-arabic: "Noto Kufi Arabic", "Noto Color Emoji", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   /* Display voice: Fraunces — warm, chiseled storybook serifs for hero
      moments only (its Latin-Extended set carries ç ê î ş û beautifully).
      Arabic display text falls through to Noto Kufi. */
-  --font-display: "Fraunces", "Noto Kufi Arabic", Georgia, serif;
+  --font-display: "Fraunces", "Noto Kufi Arabic", "Noto Color Emoji", Georgia, serif;
 
   /* Semantic tokens used across pages/components */
   --color-surface: #ffffff;
@@ -90,7 +91,7 @@ body {
 }
 
 [dir="rtl"] {
-  --font-sans: "Noto Kufi Arabic", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Noto Kufi Arabic", "Noto Color Emoji", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   font-family: var(--font-sans);
   line-height: 1.65;
 }

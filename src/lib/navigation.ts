@@ -30,9 +30,12 @@ export interface RouteMeta {
 
 export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   const loc = (ku: string, ar: string, en: string) => pickLocalized(language, { ku, ar, en });
+  // Normalise: "/learn/" and "/learn" are the same route (react-router matches
+  // both), so strip trailing slashes before the prefix chain below.
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
   // 1. Home
-  if (pathname === '/') {
+  if (path === '/') {
     return {
       isMainTab: true,
       hideHeader: false,
@@ -44,7 +47,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 2. Login
-  if (pathname === '/login') {
+  if (path === '/login') {
     return {
       isMainTab: true,
       hideHeader: true,
@@ -56,7 +59,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 3. Alphabet
-  if (pathname === '/alphabet') {
+  if (path === '/alphabet') {
     return {
       isMainTab: true,
       hideHeader: false,
@@ -68,7 +71,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 4. Vocabulary categories (Main/Sub list)
-  if (pathname === '/vocabulary') {
+  if (path === '/vocabulary') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -80,7 +83,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5. Vocabulary categories detail / list
-  if (pathname.startsWith('/vocabulary/')) {
+  if (path.startsWith('/vocabulary/')) {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -92,7 +95,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 6. Sentences builder
-  if (pathname === '/sentences') {
+  if (path === '/sentences') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -104,7 +107,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5a. Writing word tracing page (per word)
-  if (pathname.startsWith('/writing/words/')) {
+  if (path.startsWith('/writing/words/')) {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -116,7 +119,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5b. Writing word grid
-  if (pathname === '/writing/words') {
+  if (path === '/writing/words') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -128,7 +131,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5a2. Writing sentence tracing page (per sentence)
-  if (pathname.startsWith('/writing/sentences/')) {
+  if (path.startsWith('/writing/sentences/')) {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -140,7 +143,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5b2. Writing sentence grid
-  if (pathname === '/writing/sentences') {
+  if (path === '/writing/sentences') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -152,7 +155,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5c. Writing tracing page (per letter)
-  if (pathname.startsWith('/writing/')) {
+  if (path.startsWith('/writing/')) {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -164,7 +167,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 5b. Writing grid page (Nivîsîn)
-  if (pathname === '/writing') {
+  if (path === '/writing') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -176,7 +179,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 6a. Grammar lesson detail
-  if (pathname.startsWith('/grammar/')) {
+  if (path.startsWith('/grammar/')) {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -188,7 +191,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 6b. Grammar sub-category hub
-  if (pathname === '/grammar') {
+  if (path === '/grammar') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -199,8 +202,20 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
     };
   }
 
+  // 6c. Practice hub (Learn)
+  if (path === '/learn') {
+    return {
+      isMainTab: false,
+      hideHeader: false,
+      hideBottomNav: false,
+      brandLabel: loc('PASKÊL FÊRBÛNÊ', 'مركز التعلم', 'PRACTICE HUB'),
+      title: loc('Fêr Bibe', 'تعلّم', 'Learn'),
+      safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
+    };
+  }
+
   // 7. Favorites
-  if (pathname === '/favorites') {
+  if (path === '/favorites') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -212,7 +227,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 9. Active Quiz
-  if (pathname.startsWith('/quiz/')) {
+  if (path.startsWith('/quiz/')) {
     return {
       isMainTab: false,
       hideHeader: true,
@@ -225,7 +240,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 10. Roadmap
-  if (pathname === '/roadmap') {
+  if (path === '/roadmap') {
     return {
       isMainTab: true,
       hideHeader: false,
@@ -237,7 +252,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 11. Games
-  if (pathname === '/games') {
+  if (path === '/games') {
     return {
       isMainTab: true,
       hideHeader: false,
@@ -249,7 +264,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // Gem Store
-  if (pathname === '/store') {
+  if (path === '/store') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -261,7 +276,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 12. Search
-  if (pathname === '/search') {
+  if (path === '/search') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -273,7 +288,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 14. Profile
-  if (pathname === '/profile') {
+  if (path === '/profile') {
     return {
       isMainTab: true,
       hideHeader: false,
@@ -285,7 +300,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 15. Leaderboard
-  if (pathname === '/leaderboard') {
+  if (path === '/leaderboard') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -297,7 +312,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 16. Privacy Policy
-  if (pathname === '/privacy') {
+  if (path === '/privacy') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -309,7 +324,7 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
   }
 
   // 17. Terms of Service
-  if (pathname === '/terms') {
+  if (path === '/terms') {
     return {
       isMainTab: false,
       hideHeader: false,
@@ -320,13 +335,15 @@ export function getRouteMeta(pathname: string, language: Language): RouteMeta {
     };
   }
 
-  // 18. Default / Fallback
+  // 18. Unmatched route → 404 (every real route is matched above, so reaching
+  // here means the URL does not exist. Short title so it never truncates in
+  // the compact mobile header.)
   return {
     isMainTab: false,
     hideHeader: false,
     hideBottomNav: false,
-    brandLabel: loc('KWESTA KURDÎ', 'كويست الكورمانجية', 'KURMANJI QUEST'),
-    title: loc('Hîn Bibe', 'تعلم', 'Learn'),
+    brandLabel: loc('NEHENG', '٤٠٤', 'ERROR 404'),
+    title: loc('Rêç Ne Ye', 'غير موجود', 'Not Found'),
     safeBackTo: loc('Mal', 'الرئيسية', 'Home'),
   };
 }
