@@ -469,7 +469,7 @@ export function MainLayout() {
                     {routeMeta.brandLabel}
                   </p>
                 )}
-                <h1 dir="auto" className="text-lg font-black tracking-tight text-ink truncate leading-tight mt-0.5">
+                <h1 dir="auto" className="text-base sm:text-lg font-black tracking-tight text-ink truncate leading-tight mt-0.5">
                   {routeMeta.title}
                 </h1>
               </div>
@@ -509,29 +509,29 @@ export function MainLayout() {
                 {!isProfile && !isGuestLegal && (
                   <div
                     data-tour="stats-pill"
-                    className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800/80 border border-line-soft dark:border-slate-700 rounded-xl px-3.5 py-2"
+                    className="flex items-center gap-2 sm:gap-3 bg-slate-50 dark:bg-slate-800/80 border border-line-soft dark:border-slate-700 rounded-xl px-2.5 py-1.5 sm:px-3.5 sm:py-2"
                   >
                     <button
                       onClick={() => navigate('/')}
                       type="button"
                       title={headerLabels.streak}
-                      className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none min-h-0 py-2.5 -my-2.5 ps-2.5 -ms-2.5 pe-1 -me-1"
+                      className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none min-h-0 py-2.5 -my-2.5 ps-2 -ms-2 pe-1 -me-1"
                     >
                       <Flame
                         className={`w-4 h-4 ${(userData?.streak || 0) > 0 ? 'text-orange-500 fill-orange-500' : 'text-orange-400'}`}
                         aria-hidden="true"
                       />
-                      <span className="font-black text-sm text-ink tabular-nums">{userData?.streak || 0}</span>
+                      <span className="font-black text-xs sm:text-sm text-ink tabular-nums">{userData?.streak || 0}</span>
                     </button>
                     <span className="w-px h-4 bg-line-soft dark:bg-slate-700" aria-hidden="true" />
                     <button
                       onClick={() => navigate('/store')}
                       type="button"
                       title={headerLabels.gems}
-                      className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none min-h-0 py-2.5 -my-2.5 pe-2.5 -me-2.5 ps-1 -ms-1"
+                      className="flex items-center gap-1.5 cursor-pointer bg-transparent border-none min-h-0 py-2.5 -my-2.5 pe-2 -me-2 ps-1 -ms-1"
                     >
-                      <span className="text-sm" aria-hidden="true">💎</span>
-                      <span className="font-black text-sm text-ink tabular-nums">{userData?.gems || 0}</span>
+                      <span className="text-xs sm:text-sm" aria-hidden="true">💎</span>
+                      <span className="font-black text-xs sm:text-sm text-ink tabular-nums">{userData?.gems || 0}</span>
                     </button>
                   </div>
                 )}

@@ -78,7 +78,7 @@ export function QuizStudyPhase({
               ku: 'PEYVAN GUHDARÎ BIKE Û FÊR BIBE',
             })}
           </span>
-          <h2 className="text-lg font-black text-ink truncate">{catName}</h2>
+          <h2 className="text-lg font-black text-ink line-clamp-2">{catName}</h2>
         </div>
       </Card>
 

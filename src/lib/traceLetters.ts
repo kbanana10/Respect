@@ -280,6 +280,39 @@ function glyphFontForBox(box: TraceBox): string {
   return `900 ${px}px "Noto Sans", "Arial", sans-serif`;
 }
 
+/**
+ * Shrink the font until the glyph fits its box WIDTH.
+ *
+ * `glyphFontForBox` sizes by the box's smaller side (usually the height),
+ * which is right for narrow letters but lets wide glyphs (Ş, W, M…) spill
+ * past the lane edges. Display and the evaluation mask must share the same
+ * fitted size, so the fit happens here, once, for both.
+ */
+function fitGlyphFontToWidth(
+  ctx: CanvasRenderingContext2D,
+  glyph: string,
+  box: TraceBox,
+): string {
+  const w = Math.max(0, box.right - box.left);
+  let font = glyphFontForBox(box);
+  const maxWidth = TRACE_CANVAS * w * 0.96;
+  ctx.font = font;
+  if (ctx.measureText(glyph).width <= maxWidth) return font;
+  // Binary-search a smaller size (≤10 steps) instead of stepping px by px.
+  let lo = 8;
+  const match = /900 (\d+)px/.exec(font);
+  let hi = match ? Number(match[1]) : 8;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    ctx.font = font.replace(/\d+px/, `${mid}px`);
+    if (ctx.measureText(glyph).width <= maxWidth) lo = mid;
+    else hi = mid;
+  }
+  font = font.replace(/\d+px/, `${lo}px`);
+  ctx.font = font;
+  return font;
+}
+
 /** Draw one glyph centered inside its box, ready for either display or masking. */
 export function drawGlyphInBox(
   ctx: CanvasRenderingContext2D,
@@ -293,7 +326,7 @@ export function drawGlyphInBox(
   ctx.fillStyle = fillStyle;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = glyphFontForBox(box);
+  fitGlyphFontToWidth(ctx, glyph, box);
   ctx.fillText(glyph, cx, cy);
   ctx.restore();
 }
