@@ -25,3 +25,6 @@ dev-dist/
 *.jks
 android/local.properties
 android/keystore.properties
+
+# Browser-test harness + screenshots (see AUDIT_REPORT.md for results)
+.review/
